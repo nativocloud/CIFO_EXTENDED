@@ -31,7 +31,7 @@ class LeagueSolution:
             budget = 0
             for p in team:
                 roles[p["Position"]] += 1
-                budget += p["Salary"]
+                budget += p["Cost"]
             if roles != {"GK": 1, "DEF": 2, "MID": 2, "FWD": 2}:
                 return False
             #if budget > MAX_BUDGET:
