@@ -55,3 +55,34 @@ def selection_ranking(population, players):
     total = sum(ranks)
     probs = [r / total for r in ranks[::-1]]  # Best gets highest prob
     return random.choices(sorted_pop, weights=probs, k=1)[0]
+
+
+
+def mutate_swap_constrained(solution, players, max_attempts=10):
+    """Performs a swap mutation between two players' team assignments.
+    Ensures that the resulting assignment is valid. If not, it attempts
+    a few more times before returning the original solution if no valid swap is found.
+    """
+    original_assignment = deepcopy(solution.assignment)
+    num_players = len(solution.assignment)
+
+    for attempt in range(max_attempts):
+        # Create a new assignment from the original for each attempt
+        new_assignment = deepcopy(original_assignment)
+        
+        # Select two distinct random player indices
+        idx1, idx2 = random.sample(range(num_players), 2)
+        
+        # Swap their team assignments
+        new_assignment[idx1], new_assignment[idx2] = new_assignment[idx2], new_assignment[idx1]
+        
+        # Create a new solution object with the new assignment
+        mutated_solution = LeagueSolution(new_assignment, solution.num_teams, solution.team_size, solution.max_budget)
+        
+        # Check if the mutated solution is valid
+        if mutated_solution.is_valid(players):
+            return mutated_solution # Return the valid mutated solution
+            
+    # If no valid swap is found after max_attempts, return the original solution (or a copy)
+    return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
+
