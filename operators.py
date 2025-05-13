@@ -180,3 +180,41 @@ def mutate_shuffle_within_team_constrained(solution, players, max_attempts=20):
             return mutated_solution
             
     return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
+
+
+
+def crossover_one_point_prefer_valid(parent1, parent2, players, max_attempts=10):
+    """Performs one-point crossover. Attempts to find a valid child solution.
+    If no valid child is found after max_attempts, returns the last generated child.
+    """
+    len_assignment = len(parent1.assignment)
+    if len_assignment < 2:
+        # Not enough points to cut, return a copy of a parent (e.g., parent1)
+        return LeagueSolution(deepcopy(parent1.assignment), parent1.num_teams, parent1.team_size, parent1.max_budget)
+
+    last_child_solution = None
+
+    for attempt in range(max_attempts):
+        # Choose a random cut point (ensuring it's not at the very beginning or end)
+        cut_point = random.randint(1, len_assignment - 1)
+        
+        child_assignment1 = parent1.assignment[:cut_point] + parent2.assignment[cut_point:]
+        # child_assignment2 = parent2.assignment[:cut_point] + parent1.assignment[cut_point:] # Can also generate the second child
+        
+        # For now, we focus on generating one child per call, as is common
+        child_solution = LeagueSolution(child_assignment1, parent1.num_teams, parent1.team_size, parent1.max_budget)
+        
+        if child_solution.is_valid(players):
+            return child_solution # Return the first valid child found
+        
+        last_child_solution = child_solution # Keep track of the last generated one
+
+    # If no valid child found after max_attempts, return the last one generated (might be invalid)
+    # The GA loop is expected to handle/filter invalid solutions.
+    if last_child_solution:
+        return last_child_solution
+    else:
+        # This case should ideally not be reached if len_assignment >= 2, as at least one child is always generated.
+        # Fallback to returning a copy of a parent if something unexpected happens.
+        return LeagueSolution(deepcopy(parent1.assignment), parent1.num_teams, parent1.team_size, parent1.max_budget)
+
