@@ -86,3 +86,51 @@ def mutate_swap_constrained(solution, players, max_attempts=10):
     # If no valid swap is found after max_attempts, return the original solution (or a copy)
     return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
 
+
+
+
+def mutate_targeted_player_exchange(solution, players, max_attempts=20):
+    """Selects a player P1 from team T1 and P2 from a different team T2.
+    Swaps P1 and P2. Checks if both T1 and T2 remain valid.
+    If not, retries with different players/teams or reverts.
+    """
+    original_assignment = deepcopy(solution.assignment)
+    num_players = len(solution.assignment)
+    num_teams = solution.num_teams
+
+    for attempt in range(max_attempts):
+        new_assignment = deepcopy(original_assignment)
+
+        # 1. Select two different teams
+        if num_teams < 2:
+            return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget) # Not enough teams to swap between
+        
+        team_idx1, team_idx2 = random.sample(range(num_teams), 2)
+
+        # 2. Get players from these teams
+        players_in_team1_indices = [i for i, t_id in enumerate(new_assignment) if t_id == team_idx1]
+        players_in_team2_indices = [i for i, t_id in enumerate(new_assignment) if t_id == team_idx2]
+
+        if not players_in_team1_indices or not players_in_team2_indices:
+            continue # Should not happen if teams are populated
+
+        # 3. Select one player from each team to swap
+        player_idx_from_team1 = random.choice(players_in_team1_indices)
+        player_idx_from_team2 = random.choice(players_in_team2_indices)
+
+        # 4. Perform the swap in the new_assignment
+        # Player from team1 (now at player_idx_from_team1) goes to team2
+        # Player from team2 (now at player_idx_from_team2) goes to team1
+        new_assignment[player_idx_from_team1] = team_idx2
+        new_assignment[player_idx_from_team2] = team_idx1
+        
+        mutated_solution = LeagueSolution(new_assignment, solution.num_teams, solution.team_size, solution.max_budget)
+        
+        # 5. Check validity
+        # This is a full validity check. A more optimized check would only validate team_idx1 and team_idx2.
+        # However, the current LeagueSolution.is_valid() checks all teams.
+        if mutated_solution.is_valid(players):
+            return mutated_solution
+            
+    return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
+
