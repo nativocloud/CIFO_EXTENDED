@@ -134,3 +134,49 @@ def mutate_targeted_player_exchange(solution, players, max_attempts=20):
             
     return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
 
+
+
+
+def mutate_shuffle_within_team_constrained(solution, players, max_attempts=20):
+    """Adapts the idea of shuffling a team's composition.
+    Selects a team, then attempts to swap one player from this team
+    with one player from outside this team, ensuring the overall solution remains valid.
+    """
+    original_assignment = deepcopy(solution.assignment)
+    num_players = len(solution.assignment)
+    num_teams = solution.num_teams
+
+    if num_teams == 0 or num_players == 0:
+        return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
+
+    for attempt in range(max_attempts):
+        new_assignment = deepcopy(original_assignment)
+
+        # 1. Pick a random team to modify
+        chosen_team_id = random.randint(0, num_teams - 1)
+
+        # 2. Identify players in the chosen team and players not in it
+        player_indices_in_chosen_team = [i for i, t_id in enumerate(new_assignment) if t_id == chosen_team_id]
+        player_indices_not_in_chosen_team = [i for i, t_id in enumerate(new_assignment) if t_id != chosen_team_id]
+
+        if not player_indices_in_chosen_team or not player_indices_not_in_chosen_team:
+            continue # Not possible to perform a swap
+
+        # 3. Select one player from the chosen team (p1_idx)
+        p1_idx = random.choice(player_indices_in_chosen_team)
+        
+        # 4. Select one player not in the chosen team (p2_idx)
+        p2_idx = random.choice(player_indices_not_in_chosen_team)
+
+        # 5. Perform the swap: p1 (from chosen_team) goes to p2's original team, p2 goes to chosen_team.
+        p2_original_team_id = new_assignment[p2_idx] # Team p2 was in
+        
+        new_assignment[p1_idx] = p2_original_team_id # p1 now assigned to p2's old team
+        new_assignment[p2_idx] = chosen_team_id    # p2 now assigned to the chosen_team
+        
+        mutated_solution = LeagueSolution(new_assignment, solution.num_teams, solution.team_size, solution.max_budget)
+        
+        if mutated_solution.is_valid(players):
+            return mutated_solution
+            
+    return LeagueSolution(deepcopy(original_assignment), solution.num_teams, solution.team_size, solution.max_budget)
