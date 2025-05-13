@@ -171,15 +171,18 @@ hc_solution, hc_fitness, hc_history = hill_climbing(players, max_iterations=1000
 end_time_hc = time.time()
 
 print(f"Hill Climbing finished in {end_time_hc - start_time_hc:.2f} seconds.")
-print(f"Best solution found by Hill Climbing: {hc_solution.assignment}")
-print(f"Best fitness: {hc_fitness}")
+if hc_solution:
+    print(f"Best solution found by Hill Climbing: {hc_solution.assignment}")
+    print(f"Best fitness: {hc_fitness}")
+else:
+    print("Hill Climbing did not find a valid solution.")
 
 # Plot Hill Climbing History
 plt.figure(figsize=(10, 6))
-plt.plot(hc_history, marker='o', linestyle='-')
-plt.title('Hill Climbing Convergence')
-plt.xlabel('Improvement Step')
-plt.ylabel('Fitness (Std Dev of Avg Team Skills)')
+plt.plot(hc_history, marker=\'o\', linestyle=\'-\')
+plt.title(\'Hill Climbing Convergence\')
+plt.xlabel(\'Improvement Step\')
+plt.ylabel(\'Fitness (Std Dev of Avg Team Skills)\')
 plt.grid(True)
 plt.show()
 
@@ -204,15 +207,18 @@ sa_solution, sa_fitness, sa_history = simulated_annealing_for_league(
 end_time_sa = time.time()
 
 print(f"Simulated Annealing finished in {end_time_sa - start_time_sa:.2f} seconds.")
-print(f"Best solution found by Simulated Annealing: {sa_solution.assignment}")
-print(f"Best fitness: {sa_fitness}")
+if sa_solution:
+    print(f"Best solution found by Simulated Annealing: {sa_solution.assignment}")
+    print(f"Best fitness: {sa_fitness}")
+else:
+    print("Simulated Annealing did not find a valid solution.")
 
 # Plot Simulated Annealing History
 plt.figure(figsize=(10, 6))
-plt.plot(sa_history, linestyle='-')
-plt.title('Simulated Annealing Convergence')
-plt.xlabel('Iteration Step')
-plt.ylabel('Fitness (Std Dev of Avg Team Skills)')
+plt.plot(sa_history, linestyle=\'-\')
+plt.title(\'Simulated Annealing Convergence\')
+plt.xlabel(\'Iteration Step\')
+plt.ylabel(\'Fitness (Std Dev of Avg Team Skills)\')
 plt.grid(True)
 plt.show()
 
@@ -260,7 +266,7 @@ ga_configs_new = [
 ]
 
 results_ga_new = []
-best_solutions_ga_new = []
+best_solutions_ga_new_with_time = [] # Modified to store time
 
 # Standard GA parameters (can be tuned further)
 GA_GENERATIONS = 50 # Increased generations for potentially better convergence
@@ -270,8 +276,8 @@ GA_MUTATION_RATE = 0.25 # Slightly increased mutation rate
 
 print("Running Genetic Algorithm with NEW/ADAPTED operator configurations...")
 for config in ga_configs_new:
-    start_ga_new = time.time()
-    print(f"Running {config['name']}...")
+    start_ga_config_time = time.time() # Time for this specific config
+    print(f"Running {config[\'name\']}...")
     
     best_ga_sol, history_ga_run = genetic_algorithm(
         players=players,
@@ -279,42 +285,125 @@ for config in ga_configs_new:
         generations=GA_GENERATIONS,
         mutation_rate=GA_MUTATION_RATE,
         elite_size=GA_ELITE_SIZE,
-        mutation_operator_func=config['mutation_operator_func'],
-        crossover_operator_func=config['crossover_operator_func'],
-        selection_operator_func=config['selection_operator_func'],
-        tournament_k=config['tournament_k'] if config['tournament_k'] else 3, # Default k if None
-        boltzmann_temp=config['boltzmann_temp'] if config['boltzmann_temp'] else 100, # Default temp if None
+        mutation_operator_func=config[\'mutation_operator_func\'],
+        crossover_operator_func=config[\'crossover_operator_func\'],
+        selection_operator_func=config[\'selection_operator_func\'],
+        tournament_k=config[\'tournament_k\'] if config[\'tournament_k\'] else 3, # Default k if None
+        boltzmann_temp=config[\'boltzmann_temp\'] if config[\'boltzmann_temp\'] else 100, # Default temp if None
         num_teams=NUM_TEAMS, 
         team_size=TEAM_SIZE, 
         max_budget=MAX_BUDGET,
         verbose=False # Set to True for detailed generation logs
     )
+    end_ga_config_time = time.time()
+    config_exec_time = end_ga_config_time - start_ga_config_time
     
     if best_ga_sol:
-        results_ga_new.append((config['name'], history_ga_run))
-        best_solutions_ga_new.append((config['name'], best_ga_sol, best_ga_sol.fitness(players)))
-        print(f"{config['name']} finished. Best fitness: {best_ga_sol.fitness(players):.4f}. Time: {time.time() - start_ga_new:.2f}s")
+        results_ga_new.append((config[\'name\'], history_ga_run))
+        best_solutions_ga_new_with_time.append((config[\'name\'], best_ga_sol, best_ga_sol.fitness(players), config_exec_time))
+        print(f"{config[\'name\']} finished. Best fitness: {best_ga_sol.fitness(players):.4f}. Time: {config_exec_time:.2f}s")
     else:
-        print(f"{config['name']} failed to produce a solution.")
+        print(f"{config[\'name\']} failed to produce a solution.")
     print("----------------------------------------------------")
 
 # Plot GA History for new configs
 plt.figure(figsize=(14, 9))
 for name, history in results_ga_new:
-    plt.plot(history, label=name, marker='.')
-plt.title('Genetic Algorithm Convergence - New/Adapted Operator Configurations')
-plt.xlabel('Generation')
-plt.ylabel('Best Fitness (Std Dev of Avg Team Skills)')
-plt.legend(loc='upper right', bbox_to_anchor=(1.5, 1))
+    plt.plot(history, label=name, marker=\'.\')
+plt.title(\'Genetic Algorithm Convergence - New/Adapted Operator Configurations\')
+plt.xlabel(\'Generation\')
+plt.ylabel(\'Best Fitness (Std Dev of Avg Team Skills)\')
+plt.legend(loc=\'upper right\', bbox_to_anchor=(1.5, 1))
 plt.grid(True)
 plt.tight_layout()
 plt.show()
 
 # Print best GA solutions from new configs
 print("\nBest Solutions from New GA Configurations:")
-for name, sol, fit in best_solutions_ga_new:
-    print(f"{name}: Fitness = {fit:.4f}")
+for name, sol, fit, exec_time in best_solutions_ga_new_with_time:
+    print(f"{name}: Fitness = {fit:.4f}, Time = {exec_time:.2f}s")
     # print(f"Solution: {sol.assignment}") # Uncomment to see the assignment
+
+# %% [markdown]
+# ## 4. Comparative Analysis of Algorithms
+#
+# In this section, we will compare the performance of Hill Climbing, Simulated Annealing, and the different Genetic Algorithm configurations.
+# We will look at the best fitness achieved by each and the time taken for execution.
+
+# %%
+# Consolidate results for comparison
+comparison_data = []
+
+# Hill Climbing Results
+if hc_solution:
+    comparison_data.append({
+        "Algorithm": "Hill Climbing",
+        "Best Fitness": hc_fitness,
+        "Execution Time (s)": end_time_hc - start_time_hc,
+        "Mutation Operator": "N/A (Local Search)",
+        "Crossover Operator": "N/A (Local Search)",
+        "Selection Operator": "N/A (Local Search)"
+    })
+
+# Simulated Annealing Results
+if sa_solution:
+    comparison_data.append({
+        "Algorithm": "Simulated Annealing",
+        "Best Fitness": sa_fitness,
+        "Execution Time (s)": end_time_sa - start_time_sa,
+        "Mutation Operator": "N/A (Probabilistic Local Search)",
+        "Crossover Operator": "N/A (Probabilistic Local Search)",
+        "Selection Operator": "N/A (Probabilistic Local Search)"
+    })
+
+# Genetic Algorithm Results
+for name, sol, fit, exec_time in best_solutions_ga_new_with_time:
+    original_config = next((c for c in ga_configs_new if c["name"] == name), None)
+    comparison_data.append({
+        "Algorithm": name,
+        "Best Fitness": fit,
+        "Execution Time (s)": exec_time,
+        "Mutation Operator": original_config["mutation_operator_func"].__name__ if original_config else "N/A",
+        "Crossover Operator": original_config["crossover_operator_func"].__name__ if original_config else "N/A",
+        "Selection Operator": original_config["selection_operator_func"].__name__ if original_config else "N/A"
+    })
+
+comparison_df = pd.DataFrame(comparison_data)
+print("\nComparative Analysis of Algorithms:")
+print(comparison_df.to_string())
+
+# %% [markdown]
+# ### Visualizing Comparative Performance
+
+# %%
+# Plotting Best Fitness
+plt.figure(figsize=(12, 7))
+# Sort by best fitness for clearer visualization
+comparison_df_sorted_fitness = comparison_df.sort_values(by="Best Fitness", ascending=True)
+plt.bar(comparison_df_sorted_fitness["Algorithm"], comparison_df_sorted_fitness["Best Fitness"], color=["skyblue", "lightcoral"] + ["lightgreen"]*(len(comparison_df_sorted_fitness)-2) if len(comparison_df_sorted_fitness)>2 else ["skyblue", "lightcoral"])
+plt.xlabel("Algorithm / GA Configuration")
+plt.ylabel("Best Fitness (Lower is Better)")
+plt.title("Comparison of Best Fitness Achieved")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+
+# Plotting Execution Time
+plt.figure(figsize=(12, 7))
+comparison_df_sorted_time = comparison_df.sort_values(by="Execution Time (s)", ascending=True)
+plt.bar(comparison_df_sorted_time["Algorithm"], comparison_df_sorted_time["Execution Time (s)"], color=["skyblue", "lightcoral"] + ["lightgreen"]*(len(comparison_df_sorted_time)-2) if len(comparison_df_sorted_time)>2 else ["skyblue", "lightcoral"])
+plt.xlabel("Algorithm / GA Configuration")
+plt.ylabel("Execution Time (seconds)")
+plt.title("Comparison of Execution Times")
+plt.xticks(rotation=45, ha="right")
+plt.tight_layout()
+plt.show()
+
+# %% [markdown]
+# ### Discussion of Results
+#
+# (This section will be filled in after observing the results from the table and plots. We will discuss which algorithms/configurations performed best in terms of solution quality and efficiency, and any trade-offs observed.)
+#
 
 # %% [markdown]
 # The standard deviation is related to optimization ability because it quantifies the dispersion or variability of a data set in relation to its mean. In optimization contexts, understanding variability can be crucial to identify the efficiency and accuracy of a process or model. (This was a comment in the original notebook)
