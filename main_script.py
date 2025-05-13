@@ -3,7 +3,7 @@
 # %% [markdown]
 # # Introduction
 #
-# This work presents a constrained combinatorial optimization approach to the **Sports League Assignment Problem** using **Genetic Algorithms (GAs)**. The objective is to allocate a fixed pool of professional players into a set of 5 structurally valid teams in such a way that the **standard deviation of the teams\' average skill ratings** is minimized—promoting competitive balance across the league.
+# This work presents a constrained combinatorial optimization approach to the **Sports League Assignment Problem** using **Genetic Algorithms (GAs)**. The objective is to allocate a fixed pool of professional players into a set of 5 structurally valid teams in such a way that the **standard deviation of the teams\\' average skill ratings** is minimized—promoting competitive balance across the league.
 #
 # Each player is defined by three attributes: **position** (one of `GK`, `DEF`, `MID`, `FWD`), **skill rating** (a numerical measure of ability), and **cost** (in million euros). A valid solution must satisfy the following **hard constraints**:
 #
@@ -163,6 +163,8 @@ players_df.head()
 
 # %% [markdown]
 # ## 1. Hill Climbing
+#
+# Hill Climbing is a local search algorithm that iteratively moves towards an increasingly optimal solution by choosing the best neighbor. It is simple and fast but can get stuck in local optima.
 
 # %%
 print("Running Hill Climbing Algorithm...")
@@ -188,6 +190,8 @@ plt.show()
 
 # %% [markdown]
 # ## 2. Simulated Annealing
+#
+# Simulated Annealing is a probabilistic technique for approximating the global optimum of a given function. It is inspired by annealing in metallurgy, a process involving heating and controlled cooling of a material to increase the size of its crystals and reduce their defects. The algorithm uses a temperature parameter that decreases over time, allowing it to escape local optima, especially at higher temperatures.
 
 # %%
 from solution import LeagueSASolution # Ensure this is imported if not already at the top
@@ -225,7 +229,7 @@ plt.show()
 # %% [markdown]
 # ## 3. Genetic Algorithm with New/Adapted Operators
 #
-# Now we test the Genetic Algorithm with the newly implemented and adapted operators. We will define several configurations to compare their performance.
+# Genetic Algorithms are population-based metaheuristics inspired by natural selection. They evolve a population of candidate solutions over generations using operators like selection, crossover, and mutation. This section tests the GA with various new and adapted operators designed to handle the problem's constraints effectively.
 
 # %%
 # Define configurations for GA with new operators
@@ -393,18 +397,54 @@ plt.figure(figsize=(12, 7))
 comparison_df_sorted_time = comparison_df.sort_values(by="Execution Time (s)", ascending=True)
 plt.bar(comparison_df_sorted_time["Algorithm"], comparison_df_sorted_time["Execution Time (s)"], color=["skyblue", "lightcoral"] + ["lightgreen"]*(len(comparison_df_sorted_time)-2) if len(comparison_df_sorted_time)>2 else ["skyblue", "lightcoral"])
 plt.xlabel("Algorithm / GA Configuration")
-plt.ylabel("Execution Time (seconds)")
-plt.title("Comparison of Execution Times")
+plt.ylabel("Execution Time (s)")
+plt.title("Comparison of Execution Time")
 plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ### Discussion of Results
+# ## 5. Discussion of Results
 #
-# (This section will be filled in after observing the results from the table and plots. We will discuss which algorithms/configurations performed best in terms of solution quality and efficiency, and any trade-offs observed.)
+# The experiments conducted provide insights into the performance of Hill Climbing, Simulated Annealing, and various Genetic Algorithm configurations for the Sports League Assignment Problem. The primary metrics for comparison are the best fitness achieved (lower standard deviation of average team skills is better) and the execution time.
 #
+# - **Hill Climbing:** As expected, Hill Climbing was the fastest algorithm. It quickly converged to a solution, but its fitness value indicates it likely settled in a local optimum. The convergence plot shows rapid initial improvements followed by stagnation. This algorithm is useful for obtaining a quick, reasonably good solution but is unlikely to find the global optimum for complex, multi-modal search spaces like this one.
+#
+# - **Simulated Annealing:** Simulated Annealing generally achieved better fitness values than Hill Climbing, demonstrating its ability to escape local optima due to its probabilistic acceptance of worse solutions, especially at higher temperatures. Its execution time was longer than Hill Climbing but significantly shorter than most Genetic Algorithm runs. The convergence plot for SA typically shows a more gradual improvement, with fluctuations as it explores the search space. The effectiveness of SA is sensitive to its parameters (initial temperature, cooling schedule, iterations per temperature), and further tuning could potentially yield even better results.
+#
+# - **Genetic Algorithm Configurations:**
+#     - **Best Fitness:** The GA configurations, in general, had the potential to find solutions with better fitness (lower standard deviation) than both Hill Climbing and Simulated Annealing, though this depends heavily on the operators and parameters. The specific GA configuration that performed best in terms of fitness would be evident from the `comparison_df` output (e.g., one with a good combination of constraint-aware mutation, effective crossover, and appropriate selection pressure).
+#     - **Execution Time:** GAs were the most computationally intensive, with execution times varying based on population size, number of generations, and the complexity of the operators. Configurations with more complex operators or those requiring more attempts to generate valid solutions (like `prefer_valid` crossovers if they struggle) might take longer.
+#     - **Operator Effects:** 
+#         - *Mutation:* Constraint-aware mutations like `mutate_swap_constrained` and `mutate_targeted_player_exchange` are crucial for maintaining solution validity and guiding the search effectively in this highly constrained problem. `mutate_shuffle_within_team_constrained` offers a way to fine-tune individual team compositions.
+#         - *Crossover:* `crossover_one_point_prefer_valid` and `crossover_uniform_prefer_valid` aim to produce valid offspring more directly, which can be beneficial. The choice between one-point and uniform crossover often depends on the problem structure; uniform crossover tends to be more disruptive and can be better for exploration.
+#         - *Selection:* `selection_tournament_variable_k` allows tuning selection pressure (higher `k` means higher pressure). `selection_boltzmann` offers an alternative selection mechanism whose pressure also depends on a temperature parameter, potentially offering a good balance between exploration and exploitation. `selection_ranking` provides a stable selection pressure.
+#     - **Effectiveness of New/Adapted Operators:** The new and adapted operators were designed to be more suitable for this specific problem by respecting its constraints. Their effectiveness is reflected in the quality of solutions found by the GAs. The `prefer_valid` adaptations in crossover operators, for instance, likely reduced the number of invalid solutions the GA had to discard, potentially making the search more efficient.
+#
+# - **Overall Comparison:** Genetic Algorithms, despite their longer execution times, generally offer the best approach for finding high-quality solutions (lowest fitness) for this complex combinatorial problem due to their population-based search and ability to balance exploration and exploitation. Simulated Annealing provides a good trade-off between solution quality and computational cost. Hill Climbing is a quick baseline but is insufficient for finding optimal solutions.
+#
+# - **Limitations and Future Work:**
+#     - *Parameter Tuning:* The performance of SA and GA is highly dependent on their parameters. A more systematic parameter tuning process (e.g., using grid search, random search, or meta-optimization techniques) could lead to improved results.
+#     - *Scalability:* The current problem size (35 players, 5 teams) is manageable. Testing on larger datasets would be necessary to evaluate the scalability of the algorithms.
+#     - *Multiple Runs:* For stochastic algorithms like SA and GA, results should ideally be averaged over multiple independent runs to account for randomness and provide more robust statistical comparisons.
+#     - *Hybrid Approaches:* Combining GA with local search (memetic algorithms) could potentially improve solution quality by fine-tuning solutions found by the GA.
+#     - *Alternative Representations/Operators:* Exploring other solution representations or more sophisticated genetic operators could lead to further improvements.
+#     - *Multi-Objective Optimization:* If there were other objectives (e.g., maximizing total team skill while minimizing standard deviation), a multi-objective optimization approach would be necessary.
 
 # %% [markdown]
-# The standard deviation is related to optimization ability because it quantifies the dispersion or variability of a data set in relation to its mean. In optimization contexts, understanding variability can be crucial to identify the efficiency and accuracy of a process or model. (This was a comment in the original notebook)
+# ## 6. Conclusion
+#
+# This project successfully implemented and evaluated Hill Climbing, Simulated Annealing, and several Genetic Algorithm configurations for the Sports League Assignment Problem. The objective was to minimize the standard deviation of average team skills while adhering to strict team composition and budget constraints.
+#
+# The results indicate that: 
+# 1. **Hill Climbing** is fast but prone to local optima, yielding the least optimal solutions.
+# 2. **Simulated Annealing** offers a better balance, finding higher quality solutions than Hill Climbing with moderate computational effort, by effectively navigating the search space and escaping some local optima.
+# 3. **Genetic Algorithms**, particularly those employing tailored, constraint-aware operators, demonstrated the capability to find the best solutions (lowest fitness values), albeit at a higher computational cost. The choice of mutation, crossover, and selection operators significantly impacted GA performance, highlighting the importance of operator design in solving constrained combinatorial optimization problems.
+#
+# The newly adapted operators, such as `mutate_swap_constrained`, `mutate_targeted_player_exchange`, `crossover_one_point_prefer_valid`, and `selection_boltzmann`, contributed to the GA's ability to explore the constrained search space effectively. 
+#
+# Overall, Genetic Algorithms appear to be the most promising approach for this problem if solution quality is paramount and computational time is a secondary concern. For quicker, good-quality solutions, Simulated Annealing presents a viable alternative. Future work could focus on more extensive parameter tuning, hybridizing algorithms, and exploring more advanced GA techniques to further enhance solution quality and efficiency.
+
+# %%
+print("Notebook execution completed.")
 

@@ -12,11 +12,9 @@
 - [x] Set up GitHub repository and push initial state
 - [x] Adapt and integrate class libraries (for HC/SA/GA) (Class library copied for reference)
 - [x] Implement Hill Climbing (Integrated into notebook)
-- [ ] Implement Simulated Annealing
-- [ ] Implement Genetic Algorithm (including new/adapted operators)
-- [ ] Validate and test all algorithms
-- [ ] Build Jupyter notebook for experiments and analysis
-- [ ] Document code and results (ongoing, and final report writing)
+- [x] Implement Simulated Annealing (Integrated into notebook)
+- [x] Implement Genetic Algorithm (including new/adapted operators) (All 3 mutations, 2 crossovers, 2 selections implemented)
+- [x] Validate and test all algorithms (Notebook executed successfully after all fixes)- [x] Build Jupyter notebook for experiments and analysis (Completed: Enhanced with explanations, comparative analysis, and discussion), and final report writing)
 - [ ] Finalize and send report and code to user
 - [ ] Await user feedback and next instructions
 - [ ] Report and send updated files to user
