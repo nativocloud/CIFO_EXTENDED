@@ -1,0 +1,131 @@
+Here is the content of the **CIFO\_2024\_2025\_Project\_Statement.docx** file:
+
+---
+
+### **Project Statement**
+
+The goal of this project is to apply **Genetic Algorithms** to solve an optimization problem.
+
+---
+
+### **Sports League Optimization**
+
+In a fantasy sports league, the objective is to assign players to teams in a way that ensures a **balanced distribution of talent** while **staying within salary caps**.
+
+Each player is defined by:
+
+* **Skill rating**: Represents the player's ability.
+* **Cost**: The player's salary.
+* **Position**: One of four roles: Goalkeeper (GK), Defender (DEF), Midfielder (MID), or Forward (FWD).
+
+A solution is a **complete league configuration**, specifying the team assignment for each player.
+
+#### **Constraints (must be respected in all valid solutions):**
+
+* Each team must consist of:
+
+  * 1 Goalkeeper
+  * 2 Defenders
+  * 2 Midfielders
+  * 2 Forwards
+* Each player is assigned to exactly one team.
+
+**Invalid configurations** (e.g., team with 2 goalkeepers or repeated players) are not part of the search space and must not be generated during evolution.
+
+Additionally:
+
+* Each team must stay **within a 750€ million total budget**.
+* Violations should reflect in the **fitness value**.
+
+---
+
+### **Objective**
+
+Create a **balanced league**:
+
+* All teams should have a **similar average skill rating**.
+* Measured using **standard deviation** of the average skill ratings across all teams.
+
+---
+
+### **Dataset**
+
+Includes players with:
+
+* Name
+* Position
+* Skill rating
+* Salary (in million €)
+
+Distribute these across **5 teams of 7 players each**.
+
+---
+
+### **Deliverables**
+
+* **Code implementation** (GitHub repo)
+* **Report** (PDF)
+
+---
+
+### **Code Requirements**
+
+Implement:
+
+* A **fitness function**
+* At least **3 mutation operators**
+* At least **2 crossover operators**
+* At least **2 selection mechanisms**
+
+> All must be **new or adapted** (not copied from class code), and **must respect constraints**.
+
+Optionally, you may **compare Genetic Algorithms** with other techniques (e.g., hill climbing, simulated annealing).
+
+All code should be **well-commented and documented**.
+
+#### **Recommendations:**
+
+* Core logic: Python files
+* Evaluation and results: Jupyter notebooks (preferred)
+* Use imports instead of copying class code
+* Modular and readable code is **evaluated**
+
+---
+
+### **Report Requirements**
+
+Should include:
+
+1. **Formal Problem Definition**
+
+   * Define individual representation, search space, and fitness
+
+2. **Detailed Description of Selection and Genetic Operators**
+
+   * Explain with illustrations where helpful
+
+3. **Performance Analysis**
+
+   * Compare implementations and analyze performance
+
+4. **Justify Decisions**
+
+   * Why this representation?
+   * How was fitness function designed?
+   * Which configurations performed best and how did you evaluate them?
+   * Operator influence on convergence
+   * Use of elitism and its impact
+   * Results and future improvements
+
+---
+
+### **Evaluation Criteria**
+
+* **25%** Code functionality
+* **10%** Code structure and clarity
+* **40%** Report quality and insight
+* **25%** Oral defense (all members participate)
+
+---
+
+Let me know if you want help drafting the report structure or coding specific operators.

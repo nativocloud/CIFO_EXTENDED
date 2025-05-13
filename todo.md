@@ -1,0 +1,23 @@
+# Computational Intelligence Assignment Todo List
+
+- [x] Clarify user requirements (Initial clarification: review and expand code step-by-step)
+- [x] Extract and review project files
+- [x] Explore classroom GitHub repository (Reviewed 'notebooks-solution' folder)
+- [x] Analyze problem statement
+- [x] Examine players.csv data
+- [x] Compare project files with class examples
+- [x] Identify missing components or next steps (Initial review of project Python files completed)
+- [x] Confirm with user before implementation
+- [x] Draft report outline
+- [ ] Set up GitHub repository and push initial state
+- [ ] Adapt and integrate class libraries (for HC/SA/GA)
+- [ ] Implement Hill Climbing
+- [ ] Implement Simulated Annealing
+- [ ] Implement Genetic Algorithm (including new/adapted operators)
+- [ ] Validate and test all algorithms
+- [ ] Build Jupyter notebook for experiments and analysis
+- [ ] Document code and results (ongoing, and final report writing)
+- [ ] Finalize and send report and code to user
+- [ ] Await user feedback and next instructions
+- [ ] Report and send updated files to user
+- [ ] Await user feedback and next instructions
