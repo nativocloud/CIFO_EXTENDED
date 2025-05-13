@@ -178,10 +178,10 @@ print(f"Best fitness: {hc_fitness}")
 
 # Plot Hill Climbing History
 plt.figure(figsize=(10, 6))
-plt.plot(hc_history, marker=\'o\', linestyle=\'-\')
-plt.title(\'Hill Climbing Convergence\')
-plt.xlabel(\'Improvement Step\')
-plt.ylabel(\'Fitness (Std Dev of Avg Team Skills)\')
+plt.plot(hc_history, marker='o', linestyle='-')
+plt.title('Hill Climbing Convergence')
+plt.xlabel('Improvement Step')
+plt.ylabel('Fitness (Std Dev of Avg Team Skills)')
 plt.grid(True)
 plt.show()
 
@@ -211,10 +211,10 @@ print(f"Best fitness: {sa_fitness}")
 
 # Plot Simulated Annealing History
 plt.figure(figsize=(10, 6))
-plt.plot(sa_history, linestyle=\'-\')
-plt.title(\'Simulated Annealing Convergence\')
-plt.xlabel(\'Iteration Step\t\')
-plt.ylabel(\'Fitness (Std Dev of Avg Team Skills)\t\')
+plt.plot(sa_history, linestyle='-')
+plt.title('Simulated Annealing Convergence')
+plt.xlabel('Iteration Step\t')
+plt.ylabel('Fitness (Std Dev of Avg Team Skills)\t')
 plt.grid(True)
 plt.show()
 
@@ -273,7 +273,7 @@ GA_MUTATION_RATE = 0.25 # Slightly increased mutation rate
 print("Running Genetic Algorithm with NEW/ADAPTED operator configurations...")
 for config in ga_configs_new:
     start_ga_new = time.time()
-    print(f"Running {config[\'name\']}...")
+    print(f"Running {config['name']}...")
     
     best_ga_sol, history_ga_run = genetic_algorithm(
         players=players,
@@ -281,11 +281,11 @@ for config in ga_configs_new:
         generations=GA_GENERATIONS,
         mutation_rate=GA_MUTATION_RATE,
         elite_size=GA_ELITE_SIZE,
-        mutation_operator_func=config[\'mutation_operator_func\'],
-        crossover_operator_func=config[\'crossover_operator_func\'],
-        selection_operator_func=config[\'selection_operator_func\'],
-        tournament_k=config[\'tournament_k\'] if config[\'tournament_k\'] else 3, # Default k if None
-        boltzmann_temp=config[\'boltzmann_temp\'] if config[\'boltzmann_temp\'] else 100, # Default temp if None
+        mutation_operator_func=config['mutation_operator_func'],
+        crossover_operator_func=config['crossover_operator_func'],
+        selection_operator_func=config['selection_operator_func'],
+        tournament_k=config['tournament_k'] if config['tournament_k'] else 3, # Default k if None
+        boltzmann_temp=config['boltzmann_temp'] if config['boltzmann_temp'] else 100, # Default temp if None
         num_teams=NUM_TEAMS, 
         team_size=TEAM_SIZE, 
         max_budget=MAX_BUDGET,
@@ -293,21 +293,21 @@ for config in ga_configs_new:
     )
     
     if best_ga_sol:
-        results_ga_new.append((config[\'name\'], history_ga_run))
-        best_solutions_ga_new.append((config[\'name\'], best_ga_sol, best_ga_sol.fitness(players)))
-        print(f"{config[\'name\']} finished. Best fitness: {best_ga_sol.fitness(players):.4f}. Time: {time.time() - start_ga_new:.2f}s")
+        results_ga_new.append((config['name'], history_ga_run))
+        best_solutions_ga_new.append((config['name'], best_ga_sol, best_ga_sol.fitness(players)))
+        print(f"{config['name']} finished. Best fitness: {best_ga_sol.fitness(players):.4f}. Time: {time.time() - start_ga_new:.2f}s")
     else:
-        print(f"{config[\'name\']} failed to produce a solution.")
+        print(f"{config['name']} failed to produce a solution.")
     print("----------------------------------------------------")
 
 # Plot GA History for new configs
 plt.figure(figsize=(14, 9))
 for name, history in results_ga_new:
-    plt.plot(history, label=name, marker=\'.\')
-plt.title(\'Genetic Algorithm Convergence - New/Adapted Operator Configurations\')
-plt.xlabel(\'Generation\')
-plt.ylabel(\'Best Fitness (Std Dev of Avg Team Skills)\')
-plt.legend(loc=\'upper right\', bbox_to_anchor=(1.5, 1))
+    plt.plot(history, label=name, marker='.')
+plt.title('Genetic Algorithm Convergence - New/Adapted Operator Configurations')
+plt.xlabel('Generation')
+plt.ylabel('Best Fitness (Std Dev of Avg Team Skills)')
+plt.legend(loc='upper right', bbox_to_anchor=(1.5, 1))
 plt.grid(True)
 plt.tight_layout()
 plt.show()
