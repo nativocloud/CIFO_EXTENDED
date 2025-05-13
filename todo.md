@@ -10,8 +10,8 @@
 - [x] Confirm with user before implementation
 - [x] Draft report outline
 - [x] Set up GitHub repository and push initial state
-- [ ] Adapt and integrate class libraries (for HC/SA/GA)
-- [ ] Implement Hill Climbing
+- [x] Adapt and integrate class libraries (for HC/SA/GA) (Class library copied for reference)
+- [x] Implement Hill Climbing (Integrated into notebook)
 - [ ] Implement Simulated Annealing
 - [ ] Implement Genetic Algorithm (including new/adapted operators)
 - [ ] Validate and test all algorithms

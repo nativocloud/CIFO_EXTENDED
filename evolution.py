@@ -92,3 +92,69 @@ def hill_climbing(players, max_iterations=1000, verbose=False):
             break
 
     return current, current_fitness, history
+
+
+
+def simulated_annealing_for_league(
+    players,
+    initial_temp=1000,
+    final_temp=1,
+    alpha=0.99,
+    iterations_per_temp=100,
+    verbose=False
+):
+    """Simulated Annealing for the Sports League Optimization problem."""
+    
+    # Initialize solution - ensure it's valid from the start
+    current_solution = LeagueSASolution()
+    while not current_solution.is_valid(players):
+        current_solution = LeagueSASolution()
+    
+    current_fitness = current_solution.fitness(players)
+    best_solution = deepcopy(current_solution)
+    best_fitness = current_fitness
+    
+    history = [current_fitness]
+    temp = initial_temp
+    
+    iteration_count = 0
+
+    if verbose:
+        print(f"Initial SA solution fitness: {current_fitness}")
+
+    while temp > final_temp:
+        for _ in range(iterations_per_temp):
+            iteration_count += 1
+            # Generate a random neighbor that is guaranteed to be valid by LeagueSASolution.get_random_neighbor
+            neighbor_solution = current_solution.get_random_neighbor(players)
+            neighbor_fitness = neighbor_solution.fitness(players)
+            
+            # Calculate energy difference (delta E)
+            # For minimization, if neighbor_fitness < current_fitness, delta_e is negative (good)
+            delta_e = neighbor_fitness - current_fitness
+            
+            if delta_e < 0: # Neighbor is better, always accept
+                current_solution = deepcopy(neighbor_solution)
+                current_fitness = neighbor_fitness
+                if current_fitness < best_fitness:
+                    best_solution = deepcopy(current_solution)
+                    best_fitness = current_fitness
+            else: # Neighbor is worse, accept with a probability
+                if temp > 1e-6: # Avoid division by zero if temp is too small
+                    acceptance_probability = np.exp(-delta_e / temp)
+                    if random.random() < acceptance_probability:
+                        current_solution = deepcopy(neighbor_solution)
+                        current_fitness = neighbor_fitness
+            
+            history.append(current_fitness) # Record current fitness at each step
+            
+            if verbose and iteration_count % 50 == 0:
+                print(f"Iter: {iteration_count}, Temp: {temp:.2f}, Current Fitness: {current_fitness:.4f}, Best Fitness: {best_fitness:.4f}")
+        
+        temp *= alpha # Cool down
+
+    if verbose:
+        print(f"Simulated Annealing finished. Best fitness: {best_fitness}")
+        
+    return best_solution, best_fitness, history
+

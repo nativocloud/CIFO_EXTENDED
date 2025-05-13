@@ -83,3 +83,69 @@ class LeagueHillClimbingSolution(LeagueSolution):
 
 
 
+
+
+
+class LeagueSASolution(LeagueSolution):
+    def get_random_neighbor(self, players):
+        # Create a deep copy to avoid modifying the original solution
+        new_solution = LeagueSASolution(deepcopy(self.assignment), self.num_teams, self.team_size, self.max_budget)
+        
+        # Simple swap mutation: pick two random players and swap their team assignments
+        # Ensure the new assignment is valid before returning
+        attempts = 0
+        max_attempts = 100 # To avoid infinite loops if it's hard to find a valid neighbor
+        while attempts < max_attempts:
+            idx1, idx2 = random.sample(range(len(new_solution.assignment)), 2)
+            
+            # Perform swap
+            original_team_p1 = new_solution.assignment[idx1]
+            original_team_p2 = new_solution.assignment[idx2]
+            
+            # Temporarily assign to check validity (or simply swap and then validate)
+            # For SA, we often generate a neighbor and then check its validity and fitness
+            # Let's try a direct swap and then validate the whole solution
+            # This is simpler than trying to maintain validity during the swap itself for complex constraints
+            
+            # Create a candidate assignment by swapping
+            candidate_assignment = deepcopy(self.assignment)
+            candidate_assignment[idx1], candidate_assignment[idx2] = candidate_assignment[idx2], candidate_assignment[idx1]
+            
+            # Create a new solution instance with the candidate assignment
+            neighbor_solution = LeagueSASolution(candidate_assignment, self.num_teams, self.team_size, self.max_budget)
+            
+            if neighbor_solution.is_valid(players):
+                return neighbor_solution
+            attempts += 1
+        
+        # If max_attempts reached and no valid neighbor found, return a copy of the current solution
+        # Or, alternatively, one could try a different neighbor generation strategy
+        # For now, returning a copy means SA might get stuck if valid neighbors are hard to find
+        # A better approach for complex problems might be to ensure neighbor generation always leads to valid, or repair invalid ones.
+        # However, the problem statement says: "Invalid configurations ... are not part of the search space and must not be generated during evolution."
+        # This implies mutation/neighbor generation should ideally produce valid solutions.
+        # The current get_neighbors in HC does this by checking validity before adding.
+        # Let's adapt that: generate a random swap, check if valid. Repeat until a valid one is found or max_attempts.
+
+        # Re-attempting with a loop that ensures validity for the *returned* neighbor
+        attempts = 0
+        while attempts < max_attempts:
+            idx1, idx2 = random.sample(range(len(self.assignment)), 2)
+            
+            # Create a candidate assignment by swapping
+            candidate_assignment = deepcopy(self.assignment)
+            candidate_assignment[idx1], candidate_assignment[idx2] = candidate_assignment[idx2], candidate_assignment[idx1]
+            
+            # Create a new solution instance with the candidate assignment
+            potential_neighbor = LeagueSASolution(candidate_assignment, self.num_teams, self.team_size, self.max_budget)
+            
+            if potential_neighbor.is_valid(players):
+                return potential_neighbor
+            attempts += 1
+            
+        # Fallback: if no valid neighbor is found after many attempts, return a copy of the current solution.
+        # This isn't ideal as SA might not explore effectively.
+        # A more robust neighbor generation that guarantees validity or a repair mechanism would be better.
+        # For now, this matches the simplicity of the HC neighbor generation.
+        return LeagueSASolution(deepcopy(self.assignment), self.num_teams, self.team_size, self.max_budget) # Return a copy of current if no valid found
+
