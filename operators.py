@@ -209,3 +209,71 @@ def selection_ranking(population, players):
     # random.choices returns a list, so we take the first element
     return random.choices(sorted_pop, weights=probabilities, k=1)[0]
 
+
+
+def selection_boltzmann(population, players, temperature, k=1):
+    """Selects k individuals using Boltzmann selection.
+    Temperature controls selection pressure: high temp -> more random, low temp -> more greedy.
+    Assumes minimization problem (lower fitness is better).
+    """
+    if not population:
+        raise ValueError("Population cannot be empty for Boltzmann selection.")
+    if temperature <= 0:
+        raise ValueError("Temperature must be positive for Boltzmann selection.")
+
+    # Calculate Boltzmann probabilities
+    # For minimization, we want lower fitness to have higher probability.
+    # So, we can use exp(-fitness / T). Or, if fitness values are large,
+    # it might be better to use exp(-(fitness - min_fitness) / T) to avoid underflow/overflow.
+    # Let's use a simpler exp(-fitness / T) for now and see.
+    
+    fitness_values = np.array([sol.fitness(players) for sol in population])
+    
+    # To prevent issues with extremely large fitness values (e.g., float("inf") for invalid solutions),
+    # filter them or handle them. For now, assume GA loop provides valid solutions to selection.
+    # If fitness can be very large, scaling or shifting might be needed.
+    # exp_fitness = np.exp(-fitness_values / temperature)
+
+    # A common way to handle large fitness values and avoid underflow with exp(-f/T)
+    # is to subtract the minimum fitness (or shift all fitness values to be positive if they can be negative)
+    # For minimization, good fitness is small. exp(-small/T) is large. exp(-large/T) is small.
+    # This naturally gives higher probability to better (smaller) fitness values.
+
+    # Handle potential inf values from invalid solutions if they reach here
+    # (though GA loop should filter them before selection)
+    valid_fitness_values = np.array([f for f in fitness_values if f != float("inf")])
+    if len(valid_fitness_values) == 0:
+        # All solutions are invalid, or population is empty of valid solutions
+        # This case should ideally be handled before calling selection, or return random choice
+        return random.choices(population, k=k)
+        
+    # Calculate probabilities based on exp(-fitness/T)
+    # To avoid numerical instability with very large or very small fitness values, 
+    # it's often good to normalize or shift. However, for simplicity:
+    probabilities_unnormalized = np.exp(-fitness_values / temperature)
+    
+    # Replace NaN/Inf in probabilities (e.g., if exp results in 0 for very high fitness/T)
+    probabilities_unnormalized[np.isinf(probabilities_unnormalized)] = 0
+    probabilities_unnormalized[np.isnan(probabilities_unnormalized)] = 0
+
+    sum_probs = np.sum(probabilities_unnormalized)
+
+    if sum_probs == 0 or np.isnan(sum_probs) or np.isinf(sum_probs):
+        # This can happen if all exp(-f/T) are ~0 (e.g., high fitness, low T) or all inf.
+        # Fallback to uniform random selection in this case.
+        # Or, could select the best individuals if sum_probs is 0 due to all fitness being high.
+        # For now, uniform random selection if probabilities are problematic.
+        # Ensure population is not empty before choice
+        if not population:
+             raise ValueError("Population is empty, cannot select.")
+        return random.choices(population, k=k)
+        
+    probabilities = probabilities_unnormalized / sum_probs
+    
+    # Ensure probabilities sum to 1, handle potential floating point inaccuracies
+    probabilities = probabilities / np.sum(probabilities)
+
+    # random.choices returns a list
+    chosen_individuals = random.choices(population, weights=probabilities, k=k)
+    return chosen_individuals if k > 1 else chosen_individuals[0]
+
