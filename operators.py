@@ -218,3 +218,35 @@ def crossover_one_point_prefer_valid(parent1, parent2, players, max_attempts=10)
         # Fallback to returning a copy of a parent if something unexpected happens.
         return LeagueSolution(deepcopy(parent1.assignment), parent1.num_teams, parent1.team_size, parent1.max_budget)
 
+
+
+
+def crossover_uniform_prefer_valid(parent1, parent2, players, max_attempts=10):
+    """Performs uniform crossover. Attempts to find a valid child solution.
+    If no valid child is found after max_attempts, returns the last generated child.
+    """
+    len_assignment = len(parent1.assignment)
+    last_child_solution = None
+
+    for attempt in range(max_attempts):
+        child_assignment = []
+        for i in range(len_assignment):
+            if random.random() < 0.5:
+                child_assignment.append(parent1.assignment[i])
+            else:
+                child_assignment.append(parent2.assignment[i])
+        
+        child_solution = LeagueSolution(child_assignment, parent1.num_teams, parent1.team_size, parent1.max_budget)
+        
+        if child_solution.is_valid(players):
+            return child_solution # Return the first valid child found
+        
+        last_child_solution = child_solution # Keep track of the last generated one
+
+    # If no valid child found after max_attempts, return the last one generated (might be invalid)
+    if last_child_solution:
+        return last_child_solution
+    else:
+        # Fallback if no child was generated (should not happen in uniform crossover with assignments)
+        return LeagueSolution(deepcopy(parent1.assignment), parent1.num_teams, parent1.team_size, parent1.max_budget)
+
