@@ -128,10 +128,10 @@ if __name__ == '__main__':
     script_start_time = time.time()
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script execution started.")
 
-    MP_GRAPHS_DIR = "/home/ubuntu/CIFO_EXTENDED_Project/mp_graphs"
-    if not os.path.exists(MP_GRAPHS_DIR):
-        os.makedirs(MP_GRAPHS_DIR)
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Created directory: {MP_GRAPHS_DIR}")
+    IMAGES_MP_DIR = "/home/ubuntu/CIFO_EXTENDED_Project/images_mp" # Updated directory
+    if not os.path.exists(IMAGES_MP_DIR):
+        os.makedirs(IMAGES_MP_DIR)
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Created directory: {IMAGES_MP_DIR}")
 
     try:
         num_processes = multiprocessing.cpu_count()
@@ -197,8 +197,8 @@ if __name__ == '__main__':
         plt.xlabel("Improvement Step")
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
-        plt.savefig(os.path.join(MP_GRAPHS_DIR, "hc_convergence_mp.png"))
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Hill Climbing convergence plot to {MP_GRAPHS_DIR}/hc_convergence_mp.png")
+        plt.savefig(os.path.join(IMAGES_MP_DIR, "hc_convergence_mp.png")) # Updated path
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Hill Climbing convergence plot to {IMAGES_MP_DIR}/hc_convergence_mp.png")
         plt.close()
     else:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Hill Climbing did not find any valid solution across all runs that produced a best overall.")
@@ -268,8 +268,8 @@ if __name__ == '__main__':
         plt.xlabel("Iteration Step")
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
-        plt.savefig(os.path.join(MP_GRAPHS_DIR, "sa_convergence_mp.png"))
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Simulated Annealing convergence plot to {MP_GRAPHS_DIR}/sa_convergence_mp.png")
+        plt.savefig(os.path.join(IMAGES_MP_DIR, "sa_convergence_mp.png")) # Updated path
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Simulated Annealing convergence plot to {IMAGES_MP_DIR}/sa_convergence_mp.png")
         plt.close()
     else:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Simulated Annealing did not find any valid solution across all runs that produced a best overall.")
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     ga_params_dict = {
         "population_size": 50,
         "generations": 100,
-        "mutation_rate": 0.2, # Adjusted from 0.1 for potentially more exploration with base operators
+        "mutation_rate": 0.2, 
         "crossover_rate": 0.8, 
         "elitism_size": 2 
     }
@@ -326,7 +326,6 @@ if __name__ == '__main__':
             "tournament_k": 5,
             "boltzmann_temp": None 
         },
-        # --- New configurations with Base Operators ---
         {
             "name": "GA_Cfg5_BaseSwap_Base1Pt_SelRank",
             "mutation_operator_func": mutate_swap,
@@ -380,12 +379,10 @@ if __name__ == '__main__':
         ga_results_parallel_all_configs = pool.map(ga_worker, ga_args_list_master)
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Genetic Algorithm worker pool finished.")
 
-    # Process results for each GA configuration
     for config_idx, ga_config_dict in enumerate(ga_configs_new):
         config_name = ga_config_dict["name"]
         print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Processing results for GA Configuration: {config_name}")
         
-        # Filter results for the current configuration
         current_config_results = [res for res in ga_results_parallel_all_configs if res["config_name"] == config_name]
         
         ga_all_fitness_values_config = [res["fitness"] for res in current_config_results]
@@ -428,8 +425,8 @@ if __name__ == '__main__':
             plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
             plt.grid(True)
             safe_config_name = config_name.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
-            plt.savefig(os.path.join(MP_GRAPHS_DIR, f"ga_convergence_mp_{safe_config_name}.png"))
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {MP_GRAPHS_DIR}/ga_convergence_mp_{safe_config_name}.png")
+            plt.savefig(os.path.join(IMAGES_MP_DIR, f"ga_convergence_mp_{safe_config_name}.png")) # Updated path
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {IMAGES_MP_DIR}/ga_convergence_mp_{safe_config_name}.png")
             plt.close()
         else:
             print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {config_name} did not find any valid solution across all runs that produced a best overall.")
@@ -450,15 +447,12 @@ if __name__ == '__main__':
     print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Generating Comparative Analysis Plots (MP) ---")
     results_df = pd.DataFrame(all_results_summary)
     print("\nOverall Results Summary Table (Multi-Processor):")
-    # Ensure all columns are printed
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
         print(results_df)
-    results_df.to_csv(os.path.join(MP_GRAPHS_DIR, "comparative_results_mp.csv"), index=False)
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative results CSV to {MP_GRAPHS_DIR}/comparative_results_mp.csv")
+    results_df.to_csv(os.path.join(IMAGES_MP_DIR, "comparative_results_mp.csv"), index=False) # Updated path
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative results CSV to {IMAGES_MP_DIR}/comparative_results_mp.csv")
 
-    # Plotting comparative fitness (excluding NaN for clarity in plot)
     plt.figure(figsize=(15, 8))
-    # Filter out rows where 'Overall Best Fitness' is NaN for plotting, or handle them appropriately
     plot_df_fitness = results_df.dropna(subset=['Overall Best Fitness'])
     plt.bar(plot_df_fitness["Algorithm"], plot_df_fitness["Overall Best Fitness"], color="skyblue")
     plt.xlabel("Algorithm Configuration")
@@ -466,11 +460,10 @@ if __name__ == '__main__':
     plt.title("Comparative Overall Best Fitness (Multi-Processor)")
     plt.xticks(rotation=90)
     plt.tight_layout()
-    plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_fitness_mp.png"))
+    plt.savefig(os.path.join(IMAGES_MP_DIR, "comparative_fitness_mp.png")) # Updated path
     plt.close()
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {MP_GRAPHS_DIR}/comparative_fitness_mp.png")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {IMAGES_MP_DIR}/comparative_fitness_mp.png")
 
-    # Plotting comparative execution times
     plt.figure(figsize=(15, 8))
     plot_df_time = results_df.dropna(subset=['Mean Exec Time (s)'])
     plt.bar(plot_df_time["Algorithm"], plot_df_time["Mean Exec Time (s)"], color="lightcoral")
@@ -479,9 +472,9 @@ if __name__ == '__main__':
     plt.title("Comparative Mean Execution Time (Multi-Processor)")
     plt.xticks(rotation=90)
     plt.tight_layout()
-    plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_times_mp.png"))
+    plt.savefig(os.path.join(IMAGES_MP_DIR, "comparative_times_mp.png")) # Updated path
     plt.close()
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution time plot to {MP_GRAPHS_DIR}/comparative_times_mp.png")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution time plot to {IMAGES_MP_DIR}/comparative_times_mp.png")
 
     script_end_time = time.time()
     print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script execution finished. Total time: {script_end_time - script_start_time:.2f} seconds.")
