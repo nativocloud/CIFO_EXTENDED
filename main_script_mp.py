@@ -11,11 +11,21 @@ import os # Added for path joining
 from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
 from evolution import genetic_algorithm, hill_climbing, simulated_annealing
 from operators import (
+    # Base Mutations
+    mutate_swap,
+    mutate_team_shift,
+    mutate_shuffle_team,
+    # New/Adapted Mutations
     mutate_swap_constrained,
     mutate_targeted_player_exchange,
     mutate_shuffle_within_team_constrained,
+    # Base Crossovers
+    crossover_one_point,
+    crossover_uniform,
+    # New/Adapted Crossovers
     crossover_one_point_prefer_valid,
     crossover_uniform_prefer_valid,
+    # Selection Operators
     selection_ranking,
     selection_tournament_variable_k,
     selection_boltzmann
@@ -279,13 +289,13 @@ if __name__ == '__main__':
     ga_params_dict = {
         "population_size": 50,
         "generations": 100,
-        "mutation_rate": 0.1,
+        "mutation_rate": 0.2, # Adjusted from 0.1 for potentially more exploration with base operators
         "crossover_rate": 0.8, 
         "elitism_size": 2 
     }
     ga_configs_new = [
         {
-            "name": "GA_Config_1 (SwapConst,1PtPreferV,TournVarK)",
+            "name": "GA_Cfg1_AdSwapC_Ad1PtPV_SelTournK3",
             "mutation_operator_func": mutate_swap_constrained,
             "crossover_operator_func": crossover_one_point_prefer_valid,
             "selection_operator_func": selection_tournament_variable_k,
@@ -293,7 +303,7 @@ if __name__ == '__main__':
             "boltzmann_temp": None 
         },
         {
-            "name": "GA_Config_2 (TargetExch,UnifPreferV,Ranking)",
+            "name": "GA_Cfg2_AdTargEx_AdUnifPV_SelRank",
             "mutation_operator_func": mutate_targeted_player_exchange,
             "crossover_operator_func": crossover_uniform_prefer_valid,
             "selection_operator_func": selection_ranking,
@@ -301,131 +311,178 @@ if __name__ == '__main__':
             "boltzmann_temp": None 
         },
         {
-            "name": "GA_Config_3 (ShuffleWithin,1PtPreferV,Boltzmann)",
+            "name": "GA_Cfg3_AdShufWTC_Ad1PtPV_SelBoltz",
             "mutation_operator_func": mutate_shuffle_within_team_constrained,
             "crossover_operator_func": crossover_one_point_prefer_valid,
             "selection_operator_func": selection_boltzmann,
             "tournament_k": None, 
-            "boltzmann_temp": 50 
+            "boltzmann_temp": 100 
         },
         {
-            "name": "GA_Config_4 (TargetExch,UnifPreferV,TournVarK_k5)",
+            "name": "GA_Cfg4_AdTargEx_AdUnifPV_SelTournK5",
             "mutation_operator_func": mutate_targeted_player_exchange,
             "crossover_operator_func": crossover_uniform_prefer_valid,
             "selection_operator_func": selection_tournament_variable_k,
-            "tournament_k": 5, 
+            "tournament_k": 5,
             "boltzmann_temp": None 
+        },
+        # --- New configurations with Base Operators ---
+        {
+            "name": "GA_Cfg5_BaseSwap_Base1Pt_SelRank",
+            "mutation_operator_func": mutate_swap,
+            "crossover_operator_func": crossover_one_point,
+            "selection_operator_func": selection_ranking,
+            "tournament_k": None,
+            "boltzmann_temp": None
+        },
+        {
+            "name": "GA_Cfg6_BaseTeamShift_AdUnifPV_SelTournK3",
+            "mutation_operator_func": mutate_team_shift,
+            "crossover_operator_func": crossover_uniform_prefer_valid,
+            "selection_operator_func": selection_tournament_variable_k,
+            "tournament_k": 3,
+            "boltzmann_temp": None
+        },
+        {
+            "name": "GA_Cfg7_AdSwapC_BaseUnif_SelBoltz",
+            "mutation_operator_func": mutate_swap_constrained,
+            "crossover_operator_func": crossover_uniform,
+            "selection_operator_func": selection_boltzmann,
+            "tournament_k": None,
+            "boltzmann_temp": 100
+        },
+        {
+            "name": "GA_Cfg8_BaseShuffle_BaseUnif_SelTournK4",
+            "mutation_operator_func": mutate_shuffle_team,
+            "crossover_operator_func": crossover_uniform,
+            "selection_operator_func": selection_tournament_variable_k,
+            "tournament_k": 4,
+            "boltzmann_temp": None
+        },
+        {
+            "name": "GA_Cfg9_AdTargEx_Base1Pt_SelRank",
+            "mutation_operator_func": mutate_targeted_player_exchange,
+            "crossover_operator_func": crossover_one_point,
+            "selection_operator_func": selection_ranking,
+            "tournament_k": None,
+            "boltzmann_temp": None
         }
     ]
 
-    for ga_config in ga_configs_new:
-        ga_config_start_time_inner = time.time()
-        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] Running GA Configuration: {ga_config['name']}")
-        ga_args_list_config = []
+    ga_args_list_master = []
+    for config_idx, ga_config_dict in enumerate(ga_configs_new):
         for i in range(NUM_RUNS_GLOBAL):
-            ga_args_list_config.append((i, players_data_global, NUM_TEAMS_GLOBAL, TEAM_SIZE_GLOBAL, MAX_BUDGET_GLOBAL, ga_config, ga_params_dict, False))
+            ga_args_list_master.append(( (config_idx * NUM_RUNS_GLOBAL) + i, players_data_global, NUM_TEAMS_GLOBAL, TEAM_SIZE_GLOBAL, MAX_BUDGET_GLOBAL, ga_config_dict, ga_params_dict, False) )
 
-        ga_results_parallel_config = []
-        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] Launching GA worker pool for {ga_config['name']}...")
-        with multiprocessing.Pool(processes=num_processes) as pool:
-            ga_results_parallel_config = pool.map(ga_worker, ga_args_list_config)
-        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA worker pool for {ga_config['name']} finished.")
+    ga_results_parallel_all_configs = []
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Launching Genetic Algorithm worker pool for {len(ga_configs_new)} configurations...")
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        ga_results_parallel_all_configs = pool.map(ga_worker, ga_args_list_master)
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Genetic Algorithm worker pool finished.")
 
-        ga_all_fitness_values_config = [res["fitness"] for res in ga_results_parallel_config]
-        ga_all_exec_times_config = [res["exec_time"] for res in ga_results_parallel_config]
-        best_ga_fitness_config = float("inf")
-        best_ga_solution_assignment_config = None
-        best_ga_history_config = []
+    # Process results for each GA configuration
+    for config_idx, ga_config_dict in enumerate(ga_configs_new):
+        config_name = ga_config_dict["name"]
+        print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Processing results for GA Configuration: {config_name}")
+        
+        # Filter results for the current configuration
+        current_config_results = [res for res in ga_results_parallel_all_configs if res["config_name"] == config_name]
+        
+        ga_all_fitness_values_config = [res["fitness"] for res in current_config_results]
+        ga_all_exec_times_config = [res["exec_time"] for res in current_config_results]
+        
+        best_ga_fitness_overall_config = float("inf")
+        best_ga_solution_assignment_overall_config = None
+        best_ga_history_overall_config = []
 
-        for res in ga_results_parallel_config:
-            if res["solution_assignment"] is not None and not np.isnan(res["fitness"]) and res["fitness"] < best_ga_fitness_config:
-                best_ga_fitness_config = res["fitness"]
-                best_ga_solution_assignment_config = res["solution_assignment"]
-                best_ga_history_config = res["history"]
+        for res in current_config_results:
+            if res["solution_assignment"] is not None and not np.isnan(res["fitness"]) and res["fitness"] < best_ga_fitness_overall_config:
+                best_ga_fitness_overall_config = res["fitness"]
+                best_ga_solution_assignment_overall_config = res["solution_assignment"]
+                best_ga_history_overall_config = res["history"]
 
         ga_mean_fitness_config = np.nanmean(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
         ga_std_fitness_config = np.nanstd(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
         ga_mean_exec_time_config = np.nanmean(ga_all_exec_times_config) if ga_all_exec_times_config else float("nan")
 
-        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {ga_config['name']} ({NUM_RUNS_GLOBAL} runs) processing finished.")
-        print(f"    Mean Best Fitness: {ga_mean_fitness_config:.4f}")
-        print(f"    Std Dev Best Fitness: {ga_std_fitness_config:.4f}")
-        print(f"    Mean Execution Time per run: {ga_mean_exec_time_config:.2f}s")
-        if best_ga_solution_assignment_config is not None:
-            print(f"    Overall Best GA Fitness for Config: {best_ga_fitness_config:.4f}")
+        print(f"  Mean Best Fitness (Config: {config_name}): {ga_mean_fitness_config:.4f}")
+        print(f"  Std Dev Best Fitness (Config: {config_name}): {ga_std_fitness_config:.4f}")
+        print(f"  Mean Execution Time per run (Config: {config_name}): {ga_mean_exec_time_config:.2f}s")
+        
+        if best_ga_solution_assignment_overall_config is not None:
+            print(f"  Overall Best GA Fitness (Config: {config_name}): {best_ga_fitness_overall_config:.4f}")
             all_results_summary.append({
-                "Algorithm": ga_config['name'] + " (MP)",
-                "Mean Fitness": ga_mean_fitness_config,
-                "Std Dev Fitness": ga_std_fitness_config,
+                "Algorithm": f"{config_name} (MP)", 
+                "Mean Fitness": ga_mean_fitness_config, 
+                "Std Dev Fitness": ga_std_fitness_config, 
                 "Mean Exec Time (s)": ga_mean_exec_time_config,
-                "Overall Best Fitness": best_ga_fitness_config,
-                "Mutation Op": ga_config["mutation_operator_func"].__name__,
-                "Crossover Op": ga_config["crossover_operator_func"].__name__,
-                "Selection Op": ga_config["selection_operator_func"].__name__
+                "Overall Best Fitness": best_ga_fitness_overall_config,
+                "Mutation Op": ga_config_dict["mutation_operator_func"].__name__,
+                "Crossover Op": ga_config_dict["crossover_operator_func"].__name__,
+                "Selection Op": ga_config_dict["selection_operator_func"].__name__
             })
-
             plt.figure(figsize=(10, 6))
-            plt.plot(best_ga_history_config, linestyle="-")
-            plt.title(f"GA Convergence ({ga_config['name']} - Best of {NUM_RUNS_GLOBAL} Runs - MP)")
+            plt.plot(best_ga_history_overall_config, marker='.', linestyle='-')
+            plt.title(f"GA Convergence ({config_name} - Best of {NUM_RUNS_GLOBAL} Runs - MP)")
             plt.xlabel("Generation")
             plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
             plt.grid(True)
-            sanitized_config_name = ga_config['name'].replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
-            plt.savefig(os.path.join(MP_GRAPHS_DIR, f"ga_convergence_{sanitized_config_name}_mp.png"))
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {MP_GRAPHS_DIR}/ga_convergence_{sanitized_config_name}_mp.png")
+            safe_config_name = config_name.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
+            plt.savefig(os.path.join(MP_GRAPHS_DIR, f"ga_convergence_mp_{safe_config_name}.png"))
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {MP_GRAPHS_DIR}/ga_convergence_mp_{safe_config_name}.png")
             plt.close()
         else:
-            print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {ga_config['name']} did not find any valid solution across all runs that produced a best overall.")
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {config_name} did not find any valid solution across all runs that produced a best overall.")
             all_results_summary.append({
-                "Algorithm": ga_config['name'] + " (MP)",
-                "Mean Fitness": ga_mean_fitness_config,
-                "Std Dev Fitness": ga_std_fitness_config,
+                "Algorithm": f"{config_name} (MP)", 
+                "Mean Fitness": ga_mean_fitness_config, 
+                "Std Dev Fitness": ga_std_fitness_config, 
                 "Mean Exec Time (s)": ga_mean_exec_time_config,
                 "Overall Best Fitness": float('nan'),
-                "Mutation Op": ga_config["mutation_operator_func"].__name__,
-                "Crossover Op": ga_config["crossover_operator_func"].__name__,
-                "Selection Op": ga_config["selection_operator_func"].__name__
+                "Mutation Op": ga_config_dict["mutation_operator_func"].__name__,
+                "Crossover Op": ga_config_dict["crossover_operator_func"].__name__,
+                "Selection Op": ga_config_dict["selection_operator_func"].__name__
             })
-        ga_config_end_time_inner = time.time()
-        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {ga_config['name']} took {ga_config_end_time_inner - ga_config_start_time_inner:.2f} seconds.")
     ga_section_end_time = time.time()
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Genetic Algorithms section took {ga_section_end_time - ga_section_start_time:.2f} seconds.")
 
-    # ---- 4. Comparative Analysis ----
-    analysis_start_time = time.time()
-    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Comparative Analysis ---")
+    # ---- Comparative Analysis ----
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Generating Comparative Analysis Plots (MP) ---")
     results_df = pd.DataFrame(all_results_summary)
-    print("Results Summary Table (MP):")
-    print(results_df.to_string())
+    print("\nOverall Results Summary Table (Multi-Processor):")
+    # Ensure all columns are printed
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        print(results_df)
+    results_df.to_csv(os.path.join(MP_GRAPHS_DIR, "comparative_results_mp.csv"), index=False)
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative results CSV to {MP_GRAPHS_DIR}/comparative_results_mp.csv")
 
-    # Plotting comparative fitness
-    plt.figure(figsize=(14, 8)) 
-    results_df_sorted_fitness = results_df.sort_values(by="Mean Fitness")
-    plt.bar(results_df_sorted_fitness["Algorithm"], results_df_sorted_fitness["Mean Fitness"], yerr=results_df_sorted_fitness["Std Dev Fitness"], capsize=5, color="skyblue")
+    # Plotting comparative fitness (excluding NaN for clarity in plot)
+    plt.figure(figsize=(15, 8))
+    # Filter out rows where 'Overall Best Fitness' is NaN for plotting, or handle them appropriately
+    plot_df_fitness = results_df.dropna(subset=['Overall Best Fitness'])
+    plt.bar(plot_df_fitness["Algorithm"], plot_df_fitness["Overall Best Fitness"], color="skyblue")
     plt.xlabel("Algorithm Configuration")
-    plt.ylabel("Mean Best Fitness (Lower is Better)")
-    plt.title("Comparative Mean Best Fitness of Algorithms (MP)")
-    plt.xticks(rotation=60, ha="right") 
+    plt.ylabel("Overall Best Fitness (Std Dev)")
+    plt.title("Comparative Overall Best Fitness (Multi-Processor)")
+    plt.xticks(rotation=90)
     plt.tight_layout()
     plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_fitness_mp.png"))
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {MP_GRAPHS_DIR}/comparative_fitness_mp.png")
     plt.close()
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {MP_GRAPHS_DIR}/comparative_fitness_mp.png")
 
     # Plotting comparative execution times
-    plt.figure(figsize=(14, 8)) 
-    results_df_sorted_time = results_df.sort_values(by="Mean Exec Time (s)")
-    plt.bar(results_df_sorted_time["Algorithm"], results_df_sorted_time["Mean Exec Time (s)"], color="lightcoral")
+    plt.figure(figsize=(15, 8))
+    plot_df_time = results_df.dropna(subset=['Mean Exec Time (s)'])
+    plt.bar(plot_df_time["Algorithm"], plot_df_time["Mean Exec Time (s)"], color="lightcoral")
     plt.xlabel("Algorithm Configuration")
-    plt.ylabel("Mean Execution Time (s)")
-    plt.title("Comparative Mean Execution Times of Algorithms (MP)")
-    plt.xticks(rotation=60, ha="right") 
+    plt.ylabel("Mean Execution Time per Run (s)")
+    plt.title("Comparative Mean Execution Time (Multi-Processor)")
+    plt.xticks(rotation=90)
     plt.tight_layout()
     plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_times_mp.png"))
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution times plot to {MP_GRAPHS_DIR}/comparative_times_mp.png")
     plt.close()
-    analysis_end_time = time.time()
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Comparative Analysis section took {analysis_end_time - analysis_start_time:.2f} seconds.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution time plot to {MP_GRAPHS_DIR}/comparative_times_mp.png")
 
     script_end_time = time.time()
-    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script finished. Total execution time: {script_end_time - script_start_time:.2f} seconds.")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script execution finished. Total time: {script_end_time - script_start_time:.2f} seconds.")
 
