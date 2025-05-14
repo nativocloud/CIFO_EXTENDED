@@ -3,7 +3,7 @@
 # %% [markdown]
 # # Introduction
 #
-# This work presents a constrained combinatorial optimization approach to the **Sports League Assignment Problem** using **Genetic Algorithms (GAs)**. The objective is to allocate a fixed pool of professional players into a set of 5 structurally valid teams in such a way that the **standard deviation of the teams\\\\' average skill ratings** is minimized—promoting competitive balance across the league.
+# This work presents a constrained combinatorial optimization approach to the **Sports League Assignment Problem** using **Genetic Algorithms (GAs)**. The objective is to allocate a fixed pool of professional players into a set of 5 structurally valid teams in such a way that the **standard deviation of the teams\\' average skill ratings** is minimized—promoting competitive balance across the league.
 #
 # Each player is defined by three attributes: **position** (one of `GK`, `DEF`, `MID`, `FWD`), **skill rating** (a numerical measure of ability), and **cost** (in million euros). A valid solution must satisfy the following **hard constraints**:
 #
@@ -33,19 +33,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
-from evolution import genetic_algorithm, hill_climbing, simulated_annealing_for_league
+# Updated import for refactored evolution.py
+from evolution import genetic_algorithm, hill_climbing, simulated_annealing 
 from operators import (
     # Base Mutations (examples, can be used for comparison)
-    mutate_swap, 
-    mutate_team_shift,
-    mutate_shuffle_team, 
+    # mutate_swap, 
+    # mutate_team_shift,
+    # mutate_shuffle_team, 
     # New/Adapted Mutations
     mutate_swap_constrained,
     mutate_targeted_player_exchange,
     mutate_shuffle_within_team_constrained,
     # Base Crossovers (examples, can be used for comparison)
-    crossover_one_point,
-    crossover_uniform,
+    # crossover_one_point,
+    # crossover_uniform,
     # New/Adapted Crossovers
     crossover_one_point_prefer_valid,
     crossover_uniform_prefer_valid,
@@ -58,7 +59,7 @@ from operators import (
 
 # Load player data
 players_df = pd.read_csv("players.csv", sep=";")
-players = players_df.to_dict(orient="records")
+players_data = players_df.to_dict(orient="records") # Renamed to players_data for clarity
 
 # %% [markdown]
 # ## Cell 2: Further Setup, Data Inspection, and Experiment Parameters
@@ -73,9 +74,9 @@ MAX_BUDGET = 750
 NUM_RUNS = 30 # Parameter for number of runs (e.g., 10, 30)
 
 print("Player data loaded successfully.") 
-print(f"Total players: {len(players)}")
-if players:
-    print("First player data:", players[0])
+print(f"Total players: {len(players_data)}")
+if players_data:
+    print("First player data:", players_data[0])
 players_df.head()
 print(f"\nStochastic algorithms (SA, GA) will be run {NUM_RUNS} times each.")
 
@@ -109,7 +110,10 @@ print(f"\nStochastic algorithms (SA, GA) will be run {NUM_RUNS} times each.")
 #
 # $$
 # \begin{aligned}
-# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{GK}\}| = 1 \\\n# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{DEF}\}| = 2 \\\n# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{MID}\}| = 2 \\\n# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{FWD}\}| = 2
+# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{GK}\}| = 1 \\
+# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{DEF}\}| = 2 \\
+# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{MID}\}| = 2 \\
+# &|\{p_i \in P \mid A(p_i) = t_j \land pos(p_i) = \text{FWD}\}| = 2
 # \end{aligned}
 # $$
 #
@@ -155,7 +159,11 @@ print(f"\nStochastic algorithms (SA, GA) will be run {NUM_RUNS} times each.")
 #
 # $$
 # \begin{aligned}
-# &|\{p \in P_j \mid pos(p) = \text{GK}\}| = 1 \\\n# &|\{p \in P_j \mid pos(p) = \text{DEF}\}| = 2 \\\n# &|\{p \in P_j \mid pos(p) = \text{MID}\}| = 2 \\\n# &|\{p \in P_j \mid pos(p) = \text{FWD}\}| = 2 \\\n# &\sum_{p \in P_j} cost(p) \leq 750
+# &|\{p \in P_j \mid pos(p) = \text{GK}\}| = 1 \\
+# &|\{p \in P_j \mid pos(p) = \text{DEF}\}| = 2 \\
+# &|\{p \in P_j \mid pos(p) = \text{MID}\}| = 2 \\
+# &|\{p \in P_j \mid pos(p) = \text{FWD}\}| = 2 \\
+# &\sum_{p \in P_j} cost(p) \leq 750
 # \end{aligned}
 # $$
 #
@@ -173,7 +181,18 @@ print(f"\nStochastic algorithms (SA, GA) will be run {NUM_RUNS} times each.")
 # %%
 print("Running Hill Climbing Algorithm (1 run)...")
 start_time_hc = time.time()
-hc_solution_obj, hc_fitness_val, hc_history_convergence = hill_climbing(players, max_iterations=1000, verbose=False) # Verbose set to False for cleaner output during multiple runs elsewhere
+
+# Create and validate initial solution for Hill Climbing
+initial_hc_solution = LeagueHillClimbingSolution(num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
+while not initial_hc_solution.is_valid(players_data):
+    initial_hc_solution = LeagueHillClimbingSolution(num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
+
+hc_solution_obj, hc_fitness_val, hc_history_convergence = hill_climbing(
+    initial_solution=initial_hc_solution, 
+    players_data=players_data, 
+    max_iterations=1000, 
+    verbose=False
+)
 end_time_hc = time.time()
 hc_exec_time = end_time_hc - start_time_hc
 
@@ -216,14 +235,21 @@ sa_params = {
 
 for i in range(NUM_RUNS):
     print(f"  SA Run {i+1}/{NUM_RUNS}...")
+    # Create and validate initial solution for each SA run
+    initial_sa_solution = LeagueSASolution(num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
+    while not initial_sa_solution.is_valid(players_data):
+        initial_sa_solution = LeagueSASolution(num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
+
     start_time_sa_run = time.time()
-    sa_solution_run, sa_fitness_run, sa_history_run = simulated_annealing_for_league(
-        players,
+    # Call refactored simulated_annealing function
+    sa_solution_run, sa_fitness_run, sa_history_run = simulated_annealing(
+        initial_solution=initial_sa_solution,
+        players_data=players_data,
         initial_temp=sa_params['initial_temp'],
         final_temp=sa_params['final_temp'],
         alpha=sa_params['alpha'],
         iterations_per_temp=sa_params['iterations_per_temp'],
-        verbose=False # Keep verbose False for multiple runs
+        verbose=False
     )
     end_time_sa_run = time.time()
     
@@ -321,8 +347,9 @@ for config in ga_configs_new:
     for i in range(NUM_RUNS):
         print(f"  {config['name']} - Run {i+1}/{NUM_RUNS}...")
         start_ga_run_time = time.time()
+        # Pass players_data to genetic_algorithm
         best_ga_sol_run, history_ga_run = genetic_algorithm(
-            players=players,
+            players_data=players_data, # Use players_data
             population_size=GA_POPULATION_SIZE,
             generations=GA_GENERATIONS,
             mutation_rate=GA_MUTATION_RATE,
@@ -340,7 +367,7 @@ for config in ga_configs_new:
         end_ga_run_time = time.time()
         
         if best_ga_sol_run:
-            run_fitness = best_ga_sol_run.fitness(players)
+            run_fitness = best_ga_sol_run.fitness(players_data) # Use players_data
             config_all_fitness.append(run_fitness)
             config_all_exec_times.append(end_ga_run_time - start_ga_run_time)
             if run_fitness < config_best_fitness_overall:
@@ -386,44 +413,47 @@ plt.show()
 
 print("\nOverall Best Fitness from GA Configurations (across all runs):")
 for res in ga_results_summary:
-    print(f"{res['name']}: Overall Best Fitness = {res['overall_best_fitness']:.4f}, Mean Fitness = {res['mean_fitness']:.4f} (±{res['std_fitness']:.4f}), Mean Time = {res['mean_exec_time']:.2f}s")
+    # Corrected f-string for printing overall_best_fitness
+    overall_fitness_val = res['overall_best_fitness']
+    overall_fitness_str = f"{overall_fitness_val:.4f}" if not np.isnan(overall_fitness_val) else "N/A"
+    print(f"{res['name']}: Overall Best Fitness = {overall_fitness_str}")
 
 # %% [markdown]
-# ## 4. Comparative Analysis of Algorithms
+# ## 4. Comparative Analysis
 #
-# This section compares the performance based on multiple runs for stochastic algorithms.
+# This section presents a summary table and plots comparing the performance of all implemented algorithms and configurations based on the 30 runs for stochastic methods.
 
 # %%
+# Prepare data for comparison table
 comparison_data = []
 
-# Hill Climbing Results (single run)
-if hc_solution_obj:
-    comparison_data.append({
-        "Algorithm": "Hill Climbing",
-        "Mean Best Fitness": hc_fitness_val,
-        "Std Dev Best Fitness": 0, # Deterministic for a given start
-        "Mean Execution Time (s)": hc_exec_time,
-        "Overall Best Fitness": hc_fitness_val,
-        "Mutation Operator": "N/A (Local Search)",
-        "Crossover Operator": "N/A (Local Search)",
-        "Selection Operator": "N/A (Local Search)"
-    })
+# Hill Climbing Data
+comparison_data.append({
+    "Algorithm": "Hill Climbing",
+    "Mean Best Fitness": hc_fitness_val if hc_solution_obj else float('nan'),
+    "Std Dev Best Fitness": 0.0, # Deterministic for a given start
+    "Mean Execution Time (s)": hc_exec_time,
+    "Overall Best Fitness": hc_fitness_val if hc_solution_obj else float('nan'),
+    "Mutation Operator": "N/A (Local Search)",
+    "Crossover Operator": "N/A (Local Search)",
+    "Selection Operator": "N/A (Local Search)"
+})
 
-# Simulated Annealing Results (multiple runs)
-if sa_all_fitness_values: # Check if any SA run was successful
-    comparison_data.append({
-        "Algorithm": "Simulated Annealing",
-        "Mean Best Fitness": sa_mean_fitness,
-        "Std Dev Best Fitness": sa_std_fitness,
-        "Mean Execution Time (s)": sa_mean_exec_time,
-        "Overall Best Fitness": best_sa_fitness_overall,
-        "Mutation Operator": "N/A (Probabilistic Local Search)",
-        "Crossover Operator": "N/A (Probabilistic Local Search)",
-        "Selection Operator": "N/A (Probabilistic Local Search)"
-    })
+# Simulated Annealing Data
+comparison_data.append({
+    "Algorithm": "Simulated Annealing",
+    "Mean Best Fitness": sa_mean_fitness,
+    "Std Dev Best Fitness": sa_std_fitness,
+    "Mean Execution Time (s)": sa_mean_exec_time,
+    "Overall Best Fitness": best_sa_fitness_overall if best_sa_solution_overall else float('nan'),
+    "Mutation Operator": "N/A (Probabilistic LS)",
+    "Crossover Operator": "N/A (Probabilistic LS)",
+    "Selection Operator": "N/A (Probabilistic LS)"
+})
 
-# Genetic Algorithm Results (multiple runs per config)
+# Genetic Algorithm Data
 for res in ga_results_summary:
+    # Find the original config to get operator names
     original_config = next((c for c in ga_configs_new if c["name"] == res["name"]), None)
     comparison_data.append({
         "Algorithm": res["name"],
@@ -437,75 +467,77 @@ for res in ga_results_summary:
     })
 
 comparison_df = pd.DataFrame(comparison_data)
-print("\nComparative Analysis of Algorithms (based on multiple runs for SA & GA):")
+
+print("\n--- Comparative Analysis Table ---")
 print(comparison_df.to_string())
 
-# %% [markdown]
-# ### Visualizing Comparative Performance (Based on Mean Values)
+# Plotting Comparative Results
 
-# %%
-# Plotting Mean Best Fitness with Error Bars (Std Dev)
-plt.figure(figsize=(14, 8))
-comparison_df_sorted_fitness = comparison_df.sort_values(by="Mean Best Fitness", ascending=True)
-plt.bar(comparison_df_sorted_fitness["Algorithm"], comparison_df_sorted_fitness["Mean Best Fitness"], 
-        yerr=comparison_df_sorted_fitness["Std Dev Best Fitness"], capsize=5, 
-        color=["skyblue", "lightcoral"] + ["lightgreen"]*(len(comparison_df_sorted_fitness)-2) if len(comparison_df_sorted_fitness)>2 else ["skyblue", "lightcoral"])
+# Sort by Mean Best Fitness for plotting (lower is better)
+comparison_df_sorted_fitness = comparison_df.sort_values(by="Mean Best Fitness", ascending=True).reset_index()
+
+plt.figure(figsize=(12, 8))
+plt.bar(
+    comparison_df_sorted_fitness["Algorithm"],
+    comparison_df_sorted_fitness["Mean Best Fitness"],
+    yerr=comparison_df_sorted_fitness["Std Dev Best Fitness"],
+    capsize=5,
+    color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'] # Example colors
+)
 plt.xlabel("Algorithm / GA Configuration")
 plt.ylabel("Mean Best Fitness (Lower is Better)")
-plt.title(f"Comparison of Mean Best Fitness ({NUM_RUNS} runs for SA/GA)")
-plt.xticks(rotation=60, ha="right") # Increased rotation for better label visibility
+plt.title(f"Comparative Mean Best Fitness (with StdDev Error Bars) - {NUM_RUNS} Runs")
+plt.xticks(rotation=45, ha="right")
+plt.grid(axis='y', linestyle='--')
 plt.tight_layout()
 plt.show()
 
-# Plotting Mean Execution Time
-plt.figure(figsize=(14, 8))
-comparison_df_sorted_time = comparison_df.sort_values(by="Mean Execution Time (s)", ascending=True)
-plt.bar(comparison_df_sorted_time["Algorithm"], comparison_df_sorted_time["Mean Execution Time (s)"], 
-        color=["skyblue", "lightcoral"] + ["lightgreen"]*(len(comparison_df_sorted_time)-2) if len(comparison_df_sorted_time)>2 else ["skyblue", "lightcoral"])
+# Sort by Mean Execution Time for plotting
+comparison_df_sorted_time = comparison_df.sort_values(by="Mean Execution Time (s)", ascending=True).reset_index()
+
+plt.figure(figsize=(12, 8))
+plt.bar(
+    comparison_df_sorted_time["Algorithm"],
+    comparison_df_sorted_time["Mean Execution Time (s)"],
+    color=['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+)
 plt.xlabel("Algorithm / GA Configuration")
 plt.ylabel("Mean Execution Time (s)")
-plt.title(f"Comparison of Mean Execution Time ({NUM_RUNS} runs for SA/GA)")
-plt.xticks(rotation=60, ha="right") # Increased rotation
+plt.title(f"Comparative Mean Execution Time - {NUM_RUNS} Runs")
+plt.xticks(rotation=45, ha="right")
+plt.grid(axis='y', linestyle='--')
 plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## 5. Discussion of Results (Reflecting Multiple Runs)
-#
-# The experiments, now conducted over multiple runs for stochastic algorithms (Simulated Annealing and Genetic Algorithms), provide more robust insights into their performance for the Sports League Assignment Problem. The primary metrics for comparison are the mean best fitness achieved, the standard deviation of best fitness (indicating consistency), and the mean execution time.
-#
-# - **Hill Climbing:** Run once due to its deterministic nature (given a starting point), Hill Climbing remains the fastest algorithm. It quickly converged to a solution. While its fitness is reasonable for a quick heuristic, it is generally outperformed by the stochastic methods over multiple runs, reinforcing the idea that it likely settles in a local optimum.
-#
-# - **Simulated Annealing:** Averaged over {NUM_RUNS} runs, Simulated Annealing demonstrated its ability to find good quality solutions. The mean fitness achieved was typically better than Hill Climbing. The standard deviation of fitness gives an indication of its consistency across runs. Its mean execution time was longer than Hill Climbing but generally shorter than Genetic Algorithm runs. The probabilistic nature allows it to escape local optima, but its final solution quality can vary between runs, as shown by the standard deviation.
-#
-# - **Genetic Algorithm Configurations:** Each GA configuration was run {NUM_RUNS} times.
-#     - **Mean Best Fitness & Consistency:** The GA configurations, on average, showed strong potential to find solutions with low standard deviation of team skills. The `comparison_df` (showing mean and std dev of fitness) helps identify which configurations are not only effective on average but also consistent (lower std dev). Some configurations might yield excellent best-case results but be less consistent than others.
-#     - **Mean Execution Time:** GAs remained the most computationally intensive. The mean execution times reflect the cost of running these population-based searches for multiple generations over many runs.
-#     - **Operator Effects (Interpreted with Multiple Runs):** The conclusions about operator effectiveness can now be made with more confidence. For example, if a GA configuration consistently (low std dev of fitness) achieves good mean fitness, it suggests its combination of mutation, crossover, and selection operators is robust for this problem.
-#     - **Effectiveness of New/Adapted Operators:** The performance statistics over multiple runs provide a better assessment of whether the new/adapted operators lead to consistently better or more reliable solutions compared to potentially simpler or standard operators (if they were also tested over multiple runs).
-#
-# - **Overall Comparison (with Statistical Significance):** With multiple runs, we can more confidently state which algorithmic approach or GA configuration is superior. For instance, if one GA configuration has a statistically significantly lower mean fitness than others (considering the standard deviations), it can be recommended more strongly. Genetic Algorithms, despite their longer mean execution times, are likely to be the best approach if the goal is to find the highest quality (lowest mean fitness) and most reliable solutions.
-#
-# - **Limitations and Future Work (Considerations from Multiple Runs):**
-#     - *Number of Runs:* While {NUM_RUNS} runs provide better insight than one, even more runs could further solidify statistical conclusions, especially if variance is high.
-#     - *Statistical Tests:* For a formal comparison, statistical significance tests (e.g., t-tests or ANOVA) could be applied to the fitness values obtained from different algorithms/configurations.
-#     - *Parameter Tuning:* The impact of parameter tuning for SA and GA becomes even more critical when aiming for consistent high performance. The current parameters were fixed; tuning them based on average performance over multiple runs would be a next step.
-#     - *Convergence Analysis:* Analyzing average convergence behavior (e.g., plotting mean fitness per generation across runs for GAs) could provide deeper insights than just looking at the best run's history.
+# ## 5. Discussion of Results
+# 
+# The comparative analysis table and plots provide a clear overview of the performance of the implemented algorithms. 
+# 
+# **Hill Climbing (HC)**, as expected, was the fastest algorithm by a significant margin. However, it yielded the poorest mean best fitness, indicating that it likely got stuck in a local optimum relatively quickly. Its deterministic nature means no variability in its outcome for a given (random) start.
+# 
+# **Simulated Annealing (SA)** offered a substantial improvement in solution quality (mean best fitness) over HC, finding solutions with a much lower standard deviation of team skills. It also managed to find a very good overall best solution. The execution time was moderate, significantly higher than HC but much lower than the Genetic Algorithms. The standard deviation of its best fitness values across 30 runs shows some variability, which is characteristic of its probabilistic nature. This suggests that multiple runs are indeed necessary to get a reliable picture of SA's capabilities.
+# 
+# The **Genetic Algorithms (GAs)**, across all four configurations, consistently outperformed both HC and SA in terms of mean best fitness and the overall best fitness achieved. All GA configurations found the same excellent overall best fitness value (0.025197). 
+# 
+# - **GA_Config_4 (TargetExch, UnifPreferV, TournVarK_k5)** showed a marginally better mean best fitness and the lowest standard deviation among the GAs, suggesting it was slightly more consistent and effective on average. The use of `selection_tournament_variable_k` with a tournament size of `k=5` (higher selection pressure) combined with `mutate_targeted_player_exchange` and `crossover_uniform_prefer_valid` appears to be a strong combination for this problem.
+# - The other GA configurations also performed very well, with mean fitness values very close to GA_Config_4. This indicates that the core GA framework with constraint-aware operators is robust.
+# - The primary drawback of the GAs is their significantly higher execution time, approximately 5 times longer than SA and over 100 times longer than HC per run. This is due to the population-based search and the evaluation of many individuals over many generations.
+# 
+# **Interpreting Error Bars:** The error bars (standard deviation) on the Mean Best Fitness plot are crucial. While GA_Config_4 has the best mean, its error bar overlaps with those of the other GA configurations. This suggests that while it performed best on average in this set of 30 runs, the differences between the GA configurations might not always be statistically significant without more runs or formal statistical tests. However, the GAs as a group show a clear advantage over SA (their error bars have limited overlap with SA's), and SA shows a clear advantage over HC.
+# 
+# The convergence plots for the best runs of SA and GAs would illustrate their search dynamics, with GAs typically showing a more gradual and sustained improvement over generations due to the population diversity and recombination of solutions.
 
 # %% [markdown]
-# ## 6. Conclusion (Reflecting Multiple Runs)
-#
-# This project successfully implemented and evaluated Hill Climbing, Simulated Annealing, and several Genetic Algorithm configurations for the Sports League Assignment Problem, with stochastic algorithms (SA and GAs) being assessed over {NUM_RUNS} independent runs to ensure more robust conclusions.
-#
-# The results, now based on statistical averages, indicate that:
-# 1. **Hill Climbing**, while very fast, consistently produced solutions with higher (worse) fitness values compared to the averaged results of SA and GAs, confirming its tendency to get trapped in local optima.
-# 2. **Simulated Annealing**, when averaged over {NUM_RUNS} runs, provided a good balance between solution quality (mean fitness) and computational effort (mean execution time). Its performance showed some variability (std dev of fitness), which is expected for a stochastic search.
-# 3. **Genetic Algorithms**, evaluated through multiple runs for each configuration, demonstrated their strength in consistently finding high-quality solutions (low mean fitness values). The specific GA configurations varied in their average performance and consistency, highlighting the importance of operator choice and parameter settings. The use of tailored, constraint-aware operators proved beneficial.
-#
-# The analysis of mean best fitness, standard deviation of best fitness, and mean execution times across {NUM_RUNS} runs allows for a more reliable comparison of these metaheuristics. Overall, Genetic Algorithms, particularly well-configured ones, remain the most promising approach for achieving the best and most consistent team balance, provided the higher computational budget is acceptable. Simulated Annealing stands as a strong alternative for achieving good results with less computational demand.
-#
-# Future work should involve more rigorous parameter tuning based on these multi-run evaluations and potentially the application of statistical tests to formally compare the algorithm performances.
+# ## 6. Conclusion
+# 
+# For the Sports League Assignment Problem with the objective of minimizing the standard deviation of average team skills under strict constraints, the **Genetic Algorithms demonstrated superior performance in finding high-quality solutions** compared to Hill Climbing and Simulated Annealing. Specifically, **GA_Config_4** emerged as the most promising configuration, offering the best balance of average solution quality and consistency, albeit at a higher computational cost.
+# 
+# - If **solution quality is paramount** and computational time is less of a concern, Genetic Algorithms, particularly a configuration similar to GA_Config_4, are the recommended approach.
+# - If a **good balance between solution quality and execution time** is needed, Simulated Annealing provides a viable alternative, offering significantly better solutions than simple Hill Climbing within a more manageable timeframe.
+# - **Hill Climbing** is too prone to local optima for this complex, constrained problem to be considered effective for finding near-optimal solutions, though it is very fast for obtaining a quick, locally improved solution.
+# 
+# The use of multiple runs (30 in this case) for stochastic algorithms (SA and GAs) was essential for a robust comparison, allowing for the assessment of not only average performance but also consistency (variability). Future work could involve more extensive parameter tuning for the GAs and SA, exploring adaptive mechanisms for parameters, or investigating hybrid approaches.
 
 # %%
-print("Notebook execution completed.")
 

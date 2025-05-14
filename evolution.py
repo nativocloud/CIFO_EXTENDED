@@ -1,74 +1,63 @@
 import random
-import numpy as np # Make sure numpy is imported for selection_boltzmann
-from copy import deepcopy # Make sure deepcopy is imported for SA and other parts
+import numpy as np
+from copy import deepcopy
 
-from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution # Added LeagueSASolution
-
-# Import all operators, including the new ones
+from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
 from operators import (
-    # Original/Base Mutations
-    mutate_swap, 
-    mutate_team_shift,
-    mutate_shuffle_team, 
-    # New/Adapted Mutations
     mutate_swap_constrained,
     mutate_targeted_player_exchange,
     mutate_shuffle_within_team_constrained,
-    # Original/Base Crossovers
-    crossover_one_point,
-    crossover_uniform,
-    # New/Adapted Crossovers
     crossover_one_point_prefer_valid,
     crossover_uniform_prefer_valid,
-    # Original/Base Selections
-    # selection_tournament, # This will be replaced by variable_k version
     selection_ranking,
-    # New/Adapted Selections
     selection_tournament_variable_k,
     selection_boltzmann
 )
 
 
-def generate_population(players, size, num_teams=5, team_size=7, max_budget=750):
+def generate_population(players_data, size, num_teams=5, team_size=7, max_budget=750):
     population = []
     attempts = 0
-    max_attempts_per_individual = 100 # Prevent infinite loop if valid generation is too hard
+    max_attempts_per_individual = 100
     while len(population) < size and attempts < size * max_attempts_per_individual:
+        # Note: LeagueSolution still needs num_teams, team_size, max_budget for its own __init__
+        # if it were to create a random assignment internally without these.
+        # However, if an assignment is passed, these might not be strictly needed in its __init__
+        # For now, we keep them as they are used if assignment is None.
         candidate = LeagueSolution(num_teams=num_teams, team_size=team_size, max_budget=max_budget)
-        if candidate.is_valid(players):
+        if candidate.is_valid(players_data):
             population.append(candidate)
         attempts += 1
     if len(population) < size:
-        # Fallback or warning if not enough valid individuals could be generated
         print(f"Warning: Could only generate {len(population)}/{size} valid individuals for initial population.")
     return population
 
+
 def genetic_algorithm(
-    players,
+    players_data, # Changed from players to players_data for consistency
     population_size=50,
     generations=30,
     mutation_rate=0.2,
     elite_size=5,
-    mutation_operator_func=mutate_swap_constrained, # Default to a constrained one
-    crossover_operator_func=crossover_one_point_prefer_valid, # Default to a prefer_valid one
+    mutation_operator_func=mutate_swap_constrained,
+    crossover_operator_func=crossover_one_point_prefer_valid,
     selection_operator_func=selection_tournament_variable_k,
-    # Parameters for specific operators
-    tournament_k=3, # For selection_tournament_variable_k
-    boltzmann_temp=100, # For selection_boltzmann
-    num_teams=5, # Pass problem parameters
+    tournament_k=3,
+    boltzmann_temp=100,
+    num_teams=5, 
     team_size=7,
     max_budget=750,
     verbose=False
 ):
-    population = generate_population(players, population_size, num_teams, team_size, max_budget)
-    if not population: # If population generation failed
+    # generate_population now takes players_data
+    population = generate_population(players_data, population_size, num_teams, team_size, max_budget)
+    if not population:
         print("Error: Initial population is empty. GA cannot proceed.")
         return None, []
         
     history = []
-    # Ensure fitness is calculated for the initial best_solution
-    best_solution = min(population, key=lambda s: s.fitness(players))
-    best_fitness_initial = best_solution.fitness(players)
+    best_solution = min(population, key=lambda s: s.fitness(players_data))
+    best_fitness_initial = best_solution.fitness(players_data)
     history.append(best_fitness_initial)
 
     if verbose:
@@ -76,124 +65,126 @@ def genetic_algorithm(
 
     for gen in range(generations):
         new_population = []
-        
-        # Sort population by fitness (ascending for minimization)
-        population.sort(key=lambda x: x.fitness(players))
-        
-        # Elitism: Carry over the best individuals
+        population.sort(key=lambda x: x.fitness(players_data))
         new_population.extend(population[:elite_size])
 
         while len(new_population) < population_size:
-            # Select parents
             if selection_operator_func == selection_tournament_variable_k:
-                parent1 = selection_operator_func(population, players, k=tournament_k)
-                parent2 = selection_operator_func(population, players, k=tournament_k)
+                parent1 = selection_operator_func(population, players_data, k=tournament_k)
+                parent2 = selection_operator_func(population, players_data, k=tournament_k)
             elif selection_operator_func == selection_boltzmann:
-                parent1 = selection_operator_func(population, players, temperature=boltzmann_temp, k=1)
-                parent2 = selection_operator_func(population, players, temperature=boltzmann_temp, k=1)
-            else: # For selection_ranking or other simple selectors
-                parent1 = selection_operator_func(population, players)
-                parent2 = selection_operator_func(population, players)
+                parent1 = selection_operator_func(population, players_data, temperature=boltzmann_temp, k=1)
+                parent2 = selection_operator_func(population, players_data, temperature=boltzmann_temp, k=1)
+            else:
+                parent1 = selection_operator_func(population, players_data)
+                parent2 = selection_operator_func(population, players_data)
             
-            # Crossover
-            # Pass `players` if the crossover operator expects it (e.g., prefer_valid versions)
             if crossover_operator_func in [crossover_one_point_prefer_valid, crossover_uniform_prefer_valid]:
-                child = crossover_operator_func(parent1, parent2, players)
+                child = crossover_operator_func(parent1, parent2, players_data)
             else:
                 child = crossover_operator_func(parent1, parent2)
 
-            # Mutation
             if random.random() < mutation_rate:
-                # Pass `players` if the mutation operator expects it (e.g., constrained versions)
                 if mutation_operator_func in [mutate_swap_constrained, mutate_targeted_player_exchange, mutate_shuffle_within_team_constrained]:
-                    child = mutation_operator_func(child, players)
+                    child = mutation_operator_func(child, players_data)
                 else:
                     child = mutation_operator_func(child)
             
-            # Add to new population if valid
-            if child.is_valid(players):
+            if child.is_valid(players_data):
                 new_population.append(child)
-            elif len(new_population) < population_size: # Try to fill population if child is invalid
-                # Add a random valid individual if we are struggling to fill the population
-                # This is a simple strategy to maintain population size
-                valid_fillers = generate_population(players, 1, num_teams, team_size, max_budget)
+            elif len(new_population) < population_size:
+                valid_fillers = generate_population(players_data, 1, num_teams, team_size, max_budget)
                 if valid_fillers:
                     new_population.append(valid_fillers[0])
 
-        if not new_population: # Should not happen if elitism > 0 and initial pop was valid
+        if not new_population:
             if verbose:
                 print(f"Warning: Generation {gen+1} resulted in an empty new population. Stopping GA.")
             break 
             
         population = new_population
-        current_best_solution = min(population, key=lambda s: s.fitness(players))
-        current_best_fitness = current_best_solution.fitness(players)
+        current_best_in_pop = min(population, key=lambda s: s.fitness(players_data))
         
-        if current_best_fitness < best_solution.fitness(players):
-            best_solution = deepcopy(current_best_solution) # Store a deep copy
+        # Update overall best_solution if current_best_in_pop is better
+        if current_best_in_pop.fitness(players_data) < best_solution.fitness(players_data):
+            best_solution = deepcopy(current_best_in_pop)
         
-        history.append(best_solution.fitness(players)) # Track fitness of the *overall best* solution found so far
+        history.append(best_solution.fitness(players_data))
         if verbose:
-            print(f"Generation {gen+1}: Best Fitness = {best_solution.fitness(players)}")
+            print(f"Generation {gen+1}: Best Fitness = {best_solution.fitness(players_data)}")
 
     return best_solution, history
 
 
-def hill_climbing(players, max_iterations=1000, num_teams=5, team_size=7, max_budget=750, verbose=False):
-    current = LeagueHillClimbingSolution(num_teams=num_teams, team_size=team_size, max_budget=max_budget)
-    while not current.is_valid(players):
-        current = LeagueHillClimbingSolution(num_teams=num_teams, team_size=team_size, max_budget=max_budget)
-
-    current_fitness = current.fitness(players)
+def hill_climbing(initial_solution, players_data, max_iterations=1000, verbose=False):
+    """
+    Generic Hill Climbing algorithm.
+    Assumes initial_solution is a valid solution object that implements:
+    - fitness(players_data)
+    - get_neighbors(players_data) -> returns list of neighbor solution objects
+    - is_valid(players_data) (implicitly, neighbors should be valid or filtered)
+    """
+    current_solution = initial_solution # current_solution is already an instance of LeagueHillClimbingSolution
+    # It is assumed that initial_solution is already validated before calling this function.
+    
+    current_fitness = current_solution.fitness(players_data)
     history = [current_fitness]
     if verbose:
         print(f"Initial HC solution fitness: {current_fitness}")
 
     for iteration in range(max_iterations):
-        neighbors = current.get_neighbors(players)
-        if not neighbors:
+        # get_neighbors should return valid neighbors or they should be filtered if not inherently valid
+        neighbors = current_solution.get_neighbors(players_data)
+        if not neighbors: # No valid neighbors found by the solution's method
             if verbose:
                 print(f"Iteration {iteration}: No valid neighbors found. Stopping.")
             break
 
-        neighbor = min(neighbors, key=lambda x: x.fitness(players))
-        neighbor_fitness = neighbor.fitness(players)
+        # Find the best neighbor (minimization)
+        best_neighbor = min(neighbors, key=lambda x: x.fitness(players_data))
+        best_neighbor_fitness = best_neighbor.fitness(players_data)
 
-        if neighbor_fitness < current_fitness:
-            current = neighbor # Already a LeagueHillClimbingSolution object
-            current_fitness = neighbor_fitness
+        if best_neighbor_fitness < current_fitness:
+            current_solution = best_neighbor # The neighbor object itself
+            current_fitness = best_neighbor_fitness
             history.append(current_fitness)
             if verbose:
                 print(f"Iteration {iteration}: New best fitness = {current_fitness}")
         else:
             if verbose:
                 print(f"Iteration {iteration}: No better neighbor found. Stopping.")
-            break
+            break # Local optimum reached
+            
     if verbose:
         print(f"Hill Climbing finished. Best fitness: {current_fitness}")
-    return current, current_fitness, history
+    # Return the best solution object found and its fitness, and history
+    return current_solution, current_fitness, history
 
 
-def simulated_annealing_for_league(
-    players,
+def simulated_annealing(
+    initial_solution, # Expects an instance of LeagueSASolution (or similar with required methods)
+    players_data,     # The players data needed for fitness and neighbor generation
     initial_temp=1000,
     final_temp=1,
     alpha=0.99,
     iterations_per_temp=100,
-    num_teams=5, 
-    team_size=7, 
-    max_budget=750,
     verbose=False
 ):
-    current_solution = LeagueSASolution(num_teams=num_teams, team_size=team_size, max_budget=max_budget)
-    while not current_solution.is_valid(players):
-        current_solution = LeagueSASolution(num_teams=num_teams, team_size=team_size, max_budget=max_budget)
-    
-    current_fitness = current_solution.fitness(players)
-    best_solution = deepcopy(current_solution)
+    """
+    Generic Simulated Annealing algorithm.
+    Assumes initial_solution is a valid solution object that implements:
+    - fitness(players_data)
+    - get_random_neighbor(players_data) -> returns a random neighbor solution object
+    - is_valid(players_data) (implicitly, random neighbor should be valid or handled)
+    """
+    current_solution = initial_solution # current_solution is already an instance of LeagueSASolution
+    # It is assumed that initial_solution is already validated before calling this function.
+
+    current_fitness = current_solution.fitness(players_data)
+    best_solution = deepcopy(current_solution) # Keep track of the best solution found so far
     best_fitness = current_fitness
     
-    history = [current_fitness]
+    history = [current_fitness] # Tracks fitness of the current solution over iterations
     temp = initial_temp
     iteration_count = 0
 
@@ -203,28 +194,33 @@ def simulated_annealing_for_league(
     while temp > final_temp:
         for _ in range(iterations_per_temp):
             iteration_count += 1
-            neighbor_solution = current_solution.get_random_neighbor(players)
-            neighbor_fitness = neighbor_solution.fitness(players)
+            # get_random_neighbor should return a valid neighbor or handle validity
+            neighbor_solution = current_solution.get_random_neighbor(players_data)
+            neighbor_fitness = neighbor_solution.fitness(players_data)
+            
             delta_e = neighbor_fitness - current_fitness
             
-            if delta_e < 0:
-                current_solution = deepcopy(neighbor_solution)
+            if delta_e < 0: # Neighbor is better
+                current_solution = deepcopy(neighbor_solution) # Accept the better neighbor
                 current_fitness = neighbor_fitness
-                if current_fitness < best_fitness:
+                if current_fitness < best_fitness: # Update overall best if this is the new best
                     best_solution = deepcopy(current_solution)
                     best_fitness = current_fitness
-            else:
+            else: # Neighbor is worse or same
                 if temp > 1e-8: # Avoid division by zero if temp is very small
                     acceptance_probability = np.exp(-delta_e / temp)
                     if random.random() < acceptance_probability:
-                        current_solution = deepcopy(neighbor_solution)
+                        current_solution = deepcopy(neighbor_solution) # Accept worse solution
                         current_fitness = neighbor_fitness
-            history.append(current_fitness)
-            if verbose and iteration_count % (iterations_per_temp * 10) == 0: # Print less frequently
+            
+            history.append(current_fitness) # Log current fitness for convergence tracking
+            if verbose and iteration_count % (iterations_per_temp * 10) == 0:
                 print(f"Iter: {iteration_count}, Temp: {temp:.2f}, Current Fitness: {current_fitness:.4f}, Best Fitness: {best_fitness:.4f}")
-        temp *= alpha
+        
+        temp *= alpha # Cool down
 
     if verbose:
-        print(f"Simulated Annealing finished. Best fitness: {best_fitness}")
+        print(f"Simulated Annealing finished. Best fitness found: {best_fitness}")
+    # Return the best solution object found, its fitness, and the history of current fitness values
     return best_solution, best_fitness, history
 
