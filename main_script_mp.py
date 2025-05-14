@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import multiprocessing # Added for multiprocessing
-# from functools import partial # Not strictly needed if args are tuples for map
+import os # Added for path joining
 
 from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
 from evolution import genetic_algorithm, hill_climbing, simulated_annealing
@@ -96,38 +96,40 @@ def ga_worker(args_tuple):
         population_size=ga_params_dict["population_size"],
         generations=ga_params_dict["generations"],
         mutation_rate=ga_params_dict["mutation_rate"],
+        elite_size=ga_params_dict["elitism_size"], 
         mutation_operator_func=ga_config_dict["mutation_operator_func"],
         crossover_operator_func=ga_config_dict["crossover_operator_func"],
         selection_operator_func=ga_config_dict["selection_operator_func"],
         tournament_k=ga_config_dict.get("tournament_k"),
         boltzmann_temp=ga_config_dict.get("boltzmann_temp"),
-        # elitism_size is handled internally by genetic_algorithm based on its signature in evolution.py
-        # crossover_rate is also handled internally by genetic_algorithm
         verbose=verbose_flag
     )
     end_time_ga_run = time.time()
     ga_exec_time_run = end_time_ga_run - start_time_ga_run
 
     if best_solution_ga_run:
-        best_fitness_ga_run = best_solution_ga_run.fitness(p_data) # Calculate fitness here
+        best_fitness_ga_run = best_solution_ga_run.fitness(p_data) 
         return {"run_id": run_id, "fitness": best_fitness_ga_run, "exec_time": ga_exec_time_run, "solution_assignment": best_solution_ga_run.assignment, "history": history_ga_run, "config_name": ga_config_dict["name"]}
     else:
-        # If best_solution_ga_run is None, it means GA failed to produce any result (e.g. empty initial population)
-        return {"run_id": run_id, "fitness": float("nan"), "exec_time": ga_exec_time_run, "solution_assignment": None, "history": [], "config_name": ga_config_dict["name"]}
+        return {"run_id": run_id, "fitness": float('nan'), "exec_time": ga_exec_time_run, "solution_assignment": None, "history": [], "config_name": ga_config_dict["name"]}
 
 
 if __name__ == '__main__':
     script_start_time = time.time()
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Script execution started.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script execution started.")
+
+    MP_GRAPHS_DIR = "/home/ubuntu/CIFO_EXTENDED_Project/mp_graphs"
+    if not os.path.exists(MP_GRAPHS_DIR):
+        os.makedirs(MP_GRAPHS_DIR)
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Created directory: {MP_GRAPHS_DIR}")
 
     try:
         num_processes = multiprocessing.cpu_count()
     except NotImplementedError:
-        num_processes = 4 # Default if cpu_count() is not available
+        num_processes = 4 
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Using {num_processes} processes for parallel execution.")
 
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Loading player data...")
-    # Player data is already loaded globally, this is just a log point
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Player data loaded successfully. Total players: {len(players_data_global)}")
     if players_data_global:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] First player data: {players_data_global[0]}")
@@ -172,7 +174,7 @@ if __name__ == '__main__':
     if best_hc_solution_assignment_overall is not None:
         print(f"  Overall Best HC Fitness: {best_hc_fitness_overall:.4f}")
         all_results_summary.append({
-            "Algorithm": "Hill Climbing", 
+            "Algorithm": "Hill Climbing (MP)", 
             "Mean Fitness": hc_mean_fitness, 
             "Std Dev Fitness": hc_std_fitness, 
             "Mean Exec Time (s)": hc_mean_exec_time_per_run,
@@ -181,17 +183,17 @@ if __name__ == '__main__':
         })
         plt.figure(figsize=(10, 6))
         plt.plot(best_hc_history_overall, marker="o", linestyle="-")
-        plt.title(f"Hill Climbing Convergence (Best of {NUM_RUNS_GLOBAL} Runs - Parallel)")
+        plt.title(f"Hill Climbing Convergence (Best of {NUM_RUNS_GLOBAL} Runs - MP)")
         plt.xlabel("Improvement Step")
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
-        plt.savefig("hc_convergence_parallel.png")
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Hill Climbing convergence plot to hc_convergence_parallel.png")
+        plt.savefig(os.path.join(MP_GRAPHS_DIR, "hc_convergence_mp.png"))
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Hill Climbing convergence plot to {MP_GRAPHS_DIR}/hc_convergence_mp.png")
         plt.close()
     else:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Hill Climbing did not find any valid solution across all runs that produced a best overall.")
         all_results_summary.append({
-            "Algorithm": "Hill Climbing", 
+            "Algorithm": "Hill Climbing (MP)", 
             "Mean Fitness": hc_mean_fitness, 
             "Std Dev Fitness": hc_std_fitness, 
             "Mean Exec Time (s)": hc_mean_exec_time_per_run,
@@ -243,7 +245,7 @@ if __name__ == '__main__':
     if best_sa_solution_assignment_overall is not None:
         print(f"  Overall Best SA Fitness: {best_sa_fitness_overall:.4f}")
         all_results_summary.append({
-            "Algorithm": "Simulated Annealing", 
+            "Algorithm": "Simulated Annealing (MP)", 
             "Mean Fitness": sa_mean_fitness, 
             "Std Dev Fitness": sa_std_fitness, 
             "Mean Exec Time (s)": sa_mean_exec_time_per_run,
@@ -252,17 +254,17 @@ if __name__ == '__main__':
         })
         plt.figure(figsize=(10, 6))
         plt.plot(best_sa_history_overall, linestyle="-")
-        plt.title(f"Simulated Annealing Convergence (Best of {NUM_RUNS_GLOBAL} Runs - Parallel)")
+        plt.title(f"Simulated Annealing Convergence (Best of {NUM_RUNS_GLOBAL} Runs - MP)")
         plt.xlabel("Iteration Step")
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
-        plt.savefig("sa_convergence_parallel.png")
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Simulated Annealing convergence plot to sa_convergence_parallel.png")
+        plt.savefig(os.path.join(MP_GRAPHS_DIR, "sa_convergence_mp.png"))
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Simulated Annealing convergence plot to {MP_GRAPHS_DIR}/sa_convergence_mp.png")
         plt.close()
     else:
         print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Simulated Annealing did not find any valid solution across all runs that produced a best overall.")
         all_results_summary.append({
-            "Algorithm": "Simulated Annealing", 
+            "Algorithm": "Simulated Annealing (MP)", 
             "Mean Fitness": sa_mean_fitness, 
             "Std Dev Fitness": sa_std_fitness, 
             "Mean Exec Time (s)": sa_mean_exec_time_per_run,
@@ -278,8 +280,8 @@ if __name__ == '__main__':
         "population_size": 50,
         "generations": 100,
         "mutation_rate": 0.1,
-        "crossover_rate": 0.8,
-        "elitism_size": 2
+        "crossover_rate": 0.8, 
+        "elitism_size": 2 
     }
     ga_configs_new = [
         {
@@ -316,129 +318,114 @@ if __name__ == '__main__':
         }
     ]
 
-    ga_overall_results_by_config = {}
-
-    for config in ga_configs_new:
-        config_start_time = time.time()
-        print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}]   Running GA Configuration: {config['name']}")
-        ga_args_list = []
+    for ga_config in ga_configs_new:
+        ga_config_start_time_inner = time.time()
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] Running GA Configuration: {ga_config['name']}")
+        ga_args_list_config = []
         for i in range(NUM_RUNS_GLOBAL):
-            ga_args_list.append((i, players_data_global, NUM_TEAMS_GLOBAL, TEAM_SIZE_GLOBAL, MAX_BUDGET_GLOBAL, config, ga_params_dict, False))
-        
-        ga_results_config_parallel = []
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   Launching GA worker pool for {config['name']}...")
+            ga_args_list_config.append((i, players_data_global, NUM_TEAMS_GLOBAL, TEAM_SIZE_GLOBAL, MAX_BUDGET_GLOBAL, ga_config, ga_params_dict, False))
+
+        ga_results_parallel_config = []
+        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] Launching GA worker pool for {ga_config['name']}...")
         with multiprocessing.Pool(processes=num_processes) as pool:
-            ga_results_config_parallel = pool.map(ga_worker, ga_args_list)
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   GA worker pool for {config['name']} finished.")
+            ga_results_parallel_config = pool.map(ga_worker, ga_args_list_config)
+        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA worker pool for {ga_config['name']} finished.")
 
-        ga_config_all_fitness = [res["fitness"] for res in ga_results_config_parallel]
-        ga_config_all_exec_times = [res["exec_time"] for res in ga_results_config_parallel]
-        best_ga_fitness_config_overall = float("inf")
-        best_ga_solution_assignment_config_overall = None
-        best_ga_history_config_overall = []
+        ga_all_fitness_values_config = [res["fitness"] for res in ga_results_parallel_config]
+        ga_all_exec_times_config = [res["exec_time"] for res in ga_results_parallel_config]
+        best_ga_fitness_config = float("inf")
+        best_ga_solution_assignment_config = None
+        best_ga_history_config = []
 
-        for res in ga_results_config_parallel:
-            if res["solution_assignment"] is not None and not np.isnan(res["fitness"]) and res["fitness"] < best_ga_fitness_config_overall:
-                best_ga_fitness_config_overall = res["fitness"]
-                best_ga_solution_assignment_config_overall = res["solution_assignment"]
-                best_ga_history_config_overall = res["history"]
+        for res in ga_results_parallel_config:
+            if res["solution_assignment"] is not None and not np.isnan(res["fitness"]) and res["fitness"] < best_ga_fitness_config:
+                best_ga_fitness_config = res["fitness"]
+                best_ga_solution_assignment_config = res["solution_assignment"]
+                best_ga_history_config = res["history"]
 
-        mean_fitness_config = np.nanmean(ga_config_all_fitness) if ga_config_all_fitness else float("nan")
-        std_fitness_config = np.nanstd(ga_config_all_fitness) if ga_config_all_fitness else float("nan")
-        mean_exec_time_config_per_run = np.nanmean(ga_config_all_exec_times) if ga_config_all_exec_times else float("nan")
-        config_end_time = time.time()
+        ga_mean_fitness_config = np.nanmean(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
+        ga_std_fitness_config = np.nanstd(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
+        ga_mean_exec_time_config = np.nanmean(ga_all_exec_times_config) if ga_all_exec_times_config else float("nan")
 
-        ga_overall_results_by_config[config["name"]] = {
-            "mean_fitness": mean_fitness_config,
-            "std_fitness": std_fitness_config,
-            "mean_exec_time": mean_exec_time_config_per_run,
-            "overall_best_fitness": best_ga_fitness_config_overall if best_ga_solution_assignment_config_overall is not None else float('nan'),
-            "best_solution_assignment": best_ga_solution_assignment_config_overall,
-            "best_history": best_ga_history_config_overall,
-            "all_fitness_values": ga_config_all_fitness,
-            "all_exec_times": ga_config_all_exec_times
-        }
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   GA Config {config['name']} ({NUM_RUNS_GLOBAL} runs) processing finished.")
-        print(f"    Mean Best Fitness: {mean_fitness_config:.4f}")
-        print(f"    Std Dev Best Fitness: {std_fitness_config:.4f}")
-        print(f"    Mean Execution Time per run: {mean_exec_time_config_per_run:.2f}s")
-        if best_ga_solution_assignment_config_overall is not None:
-            print(f"    Overall Best GA Fitness for Config: {best_ga_fitness_config_overall:.4f}")
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {ga_config['name']} ({NUM_RUNS_GLOBAL} runs) processing finished.")
+        print(f"    Mean Best Fitness: {ga_mean_fitness_config:.4f}")
+        print(f"    Std Dev Best Fitness: {ga_std_fitness_config:.4f}")
+        print(f"    Mean Execution Time per run: {ga_mean_exec_time_config:.2f}s")
+        if best_ga_solution_assignment_config is not None:
+            print(f"    Overall Best GA Fitness for Config: {best_ga_fitness_config:.4f}")
             all_results_summary.append({
-                "Algorithm": config["name"], 
-                "Mean Fitness": mean_fitness_config, 
-                "Std Dev Fitness": std_fitness_config, 
-                "Mean Exec Time (s)": mean_exec_time_config_per_run,
-                "Overall Best Fitness": best_ga_fitness_config_overall,
-                "Mutation Op": config["mutation_operator_func"].__name__,
-                "Crossover Op": config["crossover_operator_func"].__name__,
-                "Selection Op": config["selection_operator_func"].__name__
+                "Algorithm": ga_config['name'] + " (MP)",
+                "Mean Fitness": ga_mean_fitness_config,
+                "Std Dev Fitness": ga_std_fitness_config,
+                "Mean Exec Time (s)": ga_mean_exec_time_config,
+                "Overall Best Fitness": best_ga_fitness_config,
+                "Mutation Op": ga_config["mutation_operator_func"].__name__,
+                "Crossover Op": ga_config["crossover_operator_func"].__name__,
+                "Selection Op": ga_config["selection_operator_func"].__name__
             })
+
             plt.figure(figsize=(10, 6))
-            plt.plot(best_ga_history_config_overall)
-            plt.title(f"GA Convergence: {config['name']} (Best of {NUM_RUNS_GLOBAL} Runs - Parallel)")
+            plt.plot(best_ga_history_config, linestyle="-")
+            plt.title(f"GA Convergence ({ga_config['name']} - Best of {NUM_RUNS_GLOBAL} Runs - MP)")
             plt.xlabel("Generation")
-            plt.ylabel("Best Fitness in Population")
+            plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
             plt.grid(True)
-            plot_filename = f"ga_convergence_parallel_{config['name'].replace(' ', '_').replace('(', '').replace(')', '').replace(',', '')}.png"
-            plt.savefig(plot_filename)
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   Saved GA convergence plot to {plot_filename}")
+            sanitized_config_name = ga_config['name'].replace(" ", "_").replace("(", "").replace(")", "").replace(",", "")
+            plt.savefig(os.path.join(MP_GRAPHS_DIR, f"ga_convergence_{sanitized_config_name}_mp.png"))
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {MP_GRAPHS_DIR}/ga_convergence_{sanitized_config_name}_mp.png")
             plt.close()
         else:
-            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   GA Config {config['name']} did not find any valid solution across all runs that produced a best overall.")
+            print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {ga_config['name']} did not find any valid solution across all runs that produced a best overall.")
             all_results_summary.append({
-                "Algorithm": config["name"], 
-                "Mean Fitness": mean_fitness_config, 
-                "Std Dev Fitness": std_fitness_config, 
-                "Mean Exec Time (s)": mean_exec_time_config_per_run,
+                "Algorithm": ga_config['name'] + " (MP)",
+                "Mean Fitness": ga_mean_fitness_config,
+                "Std Dev Fitness": ga_std_fitness_config,
+                "Mean Exec Time (s)": ga_mean_exec_time_config,
                 "Overall Best Fitness": float('nan'),
-                "Mutation Op": config["mutation_operator_func"].__name__,
-                "Crossover Op": config["crossover_operator_func"].__name__,
-                "Selection Op": config["selection_operator_func"].__name__
+                "Mutation Op": ga_config["mutation_operator_func"].__name__,
+                "Crossover Op": ga_config["crossover_operator_func"].__name__,
+                "Selection Op": ga_config["selection_operator_func"].__name__
             })
-        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}]   GA Configuration {config['name']} took {config_end_time - config_start_time:.2f} seconds.")
+        ga_config_end_time_inner = time.time()
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {ga_config['name']} took {ga_config_end_time_inner - ga_config_start_time_inner:.2f} seconds.")
     ga_section_end_time = time.time()
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Genetic Algorithms section took {ga_section_end_time - ga_section_start_time:.2f} seconds.")
 
     # ---- 4. Comparative Analysis ----
     analysis_start_time = time.time()
-    print(f"\n\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Comparative Analysis ---")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Comparative Analysis ---")
     results_df = pd.DataFrame(all_results_summary)
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Results Summary Table:\n{results_df.to_string()}")
+    print("Results Summary Table (MP):")
+    print(results_df.to_string())
 
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Generating comparative fitness plot...")
-    plt.figure(figsize=(14, 8)) # Adjusted size for better label visibility
-    alg_names = results_df["Algorithm"]
-    mean_fitness_values = results_df["Mean Fitness"]
-    std_dev_fitness = results_df["Std Dev Fitness"]
-    # Filter out NaN values for plotting to avoid warnings/errors
-    valid_indices = ~np.isnan(mean_fitness_values)
-    plt.bar(alg_names[valid_indices], mean_fitness_values[valid_indices], yerr=std_dev_fitness[valid_indices], capsize=5, color=["blue", "green", "red", "purple", "orange", "cyan", "magenta", "yellow"][:sum(valid_indices)])
+    # Plotting comparative fitness
+    plt.figure(figsize=(14, 8)) 
+    results_df_sorted_fitness = results_df.sort_values(by="Mean Fitness")
+    plt.bar(results_df_sorted_fitness["Algorithm"], results_df_sorted_fitness["Mean Fitness"], yerr=results_df_sorted_fitness["Std Dev Fitness"], capsize=5, color="skyblue")
     plt.xlabel("Algorithm Configuration")
     plt.ylabel("Mean Best Fitness (Lower is Better)")
-    plt.title("Comparison of Algorithm Performance (Mean Fitness with Std Dev) - Parallel")
-    plt.xticks(rotation=45, ha="right")
+    plt.title("Comparative Mean Best Fitness of Algorithms (MP)")
+    plt.xticks(rotation=60, ha="right") 
     plt.tight_layout()
-    plt.savefig("comparative_fitness_parallel.png")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to comparative_fitness_parallel.png")
+    plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_fitness_mp.png"))
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {MP_GRAPHS_DIR}/comparative_fitness_mp.png")
     plt.close()
 
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Generating comparative execution times plot...")
-    plt.figure(figsize=(14, 8)) # Adjusted size
-    mean_exec_times = results_df["Mean Exec Time (s)"]
-    valid_indices_time = ~np.isnan(mean_exec_times)
-    plt.bar(alg_names[valid_indices_time], mean_exec_times[valid_indices_time], color=["blue", "green", "red", "purple", "orange", "cyan", "magenta", "yellow"][:sum(valid_indices_time)])
+    # Plotting comparative execution times
+    plt.figure(figsize=(14, 8)) 
+    results_df_sorted_time = results_df.sort_values(by="Mean Exec Time (s)")
+    plt.bar(results_df_sorted_time["Algorithm"], results_df_sorted_time["Mean Exec Time (s)"], color="lightcoral")
     plt.xlabel("Algorithm Configuration")
-    plt.ylabel("Mean Execution Time per run (s)")
-    plt.title("Comparison of Algorithm Execution Times - Parallel")
-    plt.xticks(rotation=45, ha="right")
+    plt.ylabel("Mean Execution Time (s)")
+    plt.title("Comparative Mean Execution Times of Algorithms (MP)")
+    plt.xticks(rotation=60, ha="right") 
     plt.tight_layout()
-    plt.savefig("comparative_times_parallel.png")
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution times plot to comparative_times_parallel.png")
+    plt.savefig(os.path.join(MP_GRAPHS_DIR, "comparative_times_mp.png"))
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution times plot to {MP_GRAPHS_DIR}/comparative_times_mp.png")
     plt.close()
     analysis_end_time = time.time()
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Comparative Analysis section took {analysis_end_time - analysis_start_time:.2f} seconds.")
 
     script_end_time = time.time()
-    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Script finished. Total execution time: {script_end_time - script_start_time:.2f} seconds.")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Multi-Processor Script finished. Total execution time: {script_end_time - script_start_time:.2f} seconds.")
 
