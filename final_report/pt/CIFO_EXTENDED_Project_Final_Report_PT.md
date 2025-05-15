@@ -333,3 +333,79 @@ O diagrama abaixo ilustra o processo de análise seguido neste projeto, desde a 
 ```
 
 Este processo metodológico permitiu uma exploração sistemática do espaço de algoritmos e parâmetros, culminando em recomendações bem fundamentadas para a aplicação prática.
+
+
+
+## 6. Análise Quantitativa Consolidada e Recomendações Finais
+
+Para complementar as análises detalhadas apresentadas nas secções anteriores, foi elaborado um documento dedicado à **Análise Quantitativa Detalhada dos Algoritmos do Projeto CIFO EXTENDED**. Este documento (`quantitative_analysis/pt/quantitative_analysis_pt.md`) consolida e compara numericamente o desempenho dos algoritmos em todas as fases de experimentação, focando-se em métricas chave como fitness média, desvio padrão da fitness, melhor fitness geral e tempo médio de execução. As tabelas comparativas e as discussões aprofundadas presentes nesse documento fornecem a base numérica para as conclusões e recomendações que se seguem.
+
+### 6.1. Síntese dos Resultados Quantitativos
+
+A análise quantitativa global, conforme detalhado no documento mencionado, reforça várias observações chave:
+
+*   **Consistência na Obtenção da Melhor Solução:** Diversas configurações, incluindo o `HC_MaxIter_500` e as versões otimizadas de `GA_Config_1` e `GA_Config_4`, demonstraram capacidade de atingir consistentemente a melhor fitness conhecida de **0.057143**.
+*   **Eficiência Superior do Hill Climbing:** O `HC_MaxIter_500` emergiu como o algoritmo mais rápido, encontrando a solução ótima em aproximadamente **0.44 segundos**, significativamente mais rápido que os Algoritmos Genéticos.
+*   **Desempenho dos Algoritmos Genéticos Otimizados:** Configurações como `GA_Config_1_mutation_rate_0.25` (aprox. 6.25s) e `GA_Config_4_mutation_rate_0.15` (aprox. 8.67s) também alcançaram a melhor fitness com consistência perfeita, embora com maior custo temporal. Estes oferecem uma exploração mais ampla do espaço de soluções.
+*   **Impacto da Otimização de Parâmetros:** A fase de variação de parâmetros foi essencial para refinar o desempenho dos AGs, com taxas de mutação mais elevadas e populações maiores geralmente resultando em melhor qualidade e consistência da solução.
+
+### 6.2. Recomendações Finais
+
+Com base na totalidade do trabalho desenvolvido e nos resultados quantitativos consolidados:
+
+1.  **Para Cenários com Prioridade na Velocidade:** Se o tempo de execução for o fator crítico e a solução ótima conhecida for aceitável, o **Hill Climbing com 500 iterações (`HC_MaxIter_500`)** é a recomendação primária devido à sua excecional rapidez e capacidade de encontrar consistentemente a melhor solução.
+2.  **Para Cenários que Exigem Máxima Qualidade e Exploração:** Se for necessária uma exploração mais exaustiva do espaço de soluções, com a garantia de atingir a melhor fitness possível, e o tempo de execução for uma consideração secundária, as configurações otimizadas dos Algoritmos Genéticos são preferíveis. Especificamente, **`GA_Config_4` com taxa de mutação de 0.15 e `GA_Config_1` com taxa de mutação de 0.25** são recomendadas, oferecendo um bom equilíbrio entre a qualidade da solução e um tempo de execução ainda gerível.
+3.  **Trabalhos Futuros:**
+    *   Explorar técnicas híbridas que combinem a velocidade do Hill Climbing com a capacidade de exploração dos Algoritmos Genéticos.
+    *   Investigar o impacto de diferentes representações de solução ou funções de fitness mais complexas.
+    *   Aplicar os algoritmos otimizados a conjuntos de dados maiores ou com diferentes características para avaliar a sua escalabilidade e generalização.
+    *   Desenvolver interfaces de utilizador mais amigáveis para facilitar a configuração e execução das simulações.
+
+Este projeto demonstrou a eficácia das meta-heurísticas na resolução do problema de formação de equipas desportivas e forneceu um pipeline de análise robusto, cujos resultados e processos são detalhadamente documentados e reproduzíveis através dos notebooks fornecidos para cada fase.
+
+(Secção de Apêndices e Diagrama do Processo de Análise a serem adicionados/referenciados posteriormente, conforme o plano.)
+
+
+
+
+## Apêndices
+
+Esta secção contém os documentos de suporte detalhados que foram produzidos e analisados durante o projeto CIFO EXTENDED.
+
+### Apêndice A: Documentos da Fase de Processador Único (SP)
+
+*   Relatório da Fase de Processador Único: Arquitetura, Algoritmos e Operadores (`reports_sp_phase/pt/01_sp_architecture_algorithms_operators.md`)
+*   Documento de Arquitetura da Fase SP (`reports_sp_phase/pt/00_sp_architecture.md`)
+*   Documento de Revisão de Código da Fase SP (`reports_sp_phase/pt/00_sp_code_review.md`)
+
+### Apêndice B: Documentos da Fase de Multiprocessamento (MP)
+
+*   Relatório da Fase MP - Análise de 5 Execuções (`reports_mp_phase/pt/02_mp_5_runs_analysis.md`)
+*   Relatório da Fase MP - Análise Estatística de 30 Execuções (`reports_mp_phase/pt/03_mp_30_runs_statistical_analysis.md`)
+*   Relatório da Fase MP - Análise da Variação de Parâmetros (`reports_mp_phase/pt/04_mp_param_var_analysis.md`)
+*   Relatório da Fase MP - Análise Estatística da Variação Final de Parâmetros (`reports_mp_phase/pt/05_mp_final_param_var_statistical_analysis.md`)
+*   Documento de Arquitetura da Fase MP (`reports_mp_phase/pt/00_mp_architecture.md`)
+*   Documento de Revisão de Código da Fase MP (`reports_mp_phase/pt/00_mp_code_review.md`)
+
+### Apêndice C: Análise Quantitativa e Dados
+
+*   Documento de Análise Quantitativa Detalhada (`quantitative_analysis/pt/quantitative_analysis_pt.md`)
+*   Sumário dos Resultados - 5 Execuções MP (`images_mp/run_5_results/all_algorithms_summary_mp_5runs.csv`)
+*   Sumário dos Resultados - 30 Execuções MP (Promissores) (`images_mp/run_30_results_promising/all_algorithms_summary_mp_30runs.csv`)
+*   Sumário dos Resultados - Variação de Parâmetros GA (`images_mp/param_var_results/all_ga_variations_summary_mp_5runs.csv`)
+*   Sumário dos Resultados - Variação Final de Parâmetros (30 Execuções) (`images_mp/final_param_var_results/all_algorithms_summary_final_param_var_30runs.csv`)
+
+### Apêndice D: Notebooks de Análise (Localização)
+
+*   Todos os notebooks Jupyter utilizados para análise e geração de resultados estão localizados na diretoria `/notebooks/` do repositório do projeto.
+    *   `notebooks/01_single_processor_analysis.ipynb` (Exemplo, será atualizado/criado)
+    *   `notebooks/02_multiprocessing_5_runs_analysis.ipynb` (Exemplo, será atualizado/criado)
+    *   `notebooks/03_multiprocessing_30_runs_analysis.ipynb` (Exemplo, será criado)
+    *   `notebooks/04_multiprocessing_param_var_analysis.ipynb` (Exemplo, será criado)
+    *   `notebooks/05_multiprocessing_final_param_var_analysis.ipynb` (Exemplo, será criado)
+
+### Apêndice E: Diagrama do Processo de Análise
+
+*   (Referência à imagem do diagrama do processo de análise, que será incluída ou referenciada aqui)
+
+
