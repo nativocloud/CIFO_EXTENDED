@@ -1,0 +1,12 @@
+Algorithm,Mean Fitness,Std Dev Fitness,Mean Exec Time (s),Overall Best Fitness,Mutation Op,Crossover Op,Selection Op
+Hill Climbing (SP),0.06046029978432962,0.012412733764670348,0.19880410035451254,0.05714285714285552,N/A,N/A,N/A
+Simulated Annealing (SP),0.06046029978432962,0.012412733764670347,18.351333077748617,0.05714285714285552,N/A,N/A,N/A
+GA_Cfg1_AdSwapC_Ad1PtPV_SelTournK3 (SP),0.06046029978432962,0.012412733764670347,4.124792623519897,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
+GA_Cfg2_AdTargEx_AdUnifPV_SelRank (SP),0.11263063923042432,0.03452376177292413,97.69914319515229,0.05714285714285552,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_ranking
+GA_Cfg3_AdShufWTC_Ad1PtPV_SelBoltz (SP),0.10443518715791031,0.036581274478556865,66.69450791676839,0.05714285714285552,mutate_shuffle_within_team_constrained,crossover_one_point_prefer_valid,selection_boltzmann
+GA_Cfg4_AdTargEx_AdUnifPV_SelTournK5 (SP),0.05714285714285553,1.3877787807814457e-17,6.168347756067912,0.05714285714285552,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_tournament_variable_k
+GA_Cfg5_BaseSwap_Base1Pt_SelRank (SP),0.12014934472645611,0.028323668545896893,53.87849882443746,0.05714285714285552,mutate_swap,crossover_one_point,selection_ranking
+GA_Cfg6_BaseTeamShift_AdUnifPV_SelTournK3 (SP),0.12342674505417241,0.04045475132356617,5.120819044113159,0.05714285714285552,mutate_team_shift,crossover_uniform_prefer_valid,selection_tournament_variable_k
+GA_Cfg7_AdSwapC_BaseUnif_SelBoltz (SP),0.12577360360232026,0.03638485646175921,48.86208537419637,0.05714285714285552,mutate_swap_constrained,crossover_uniform,selection_boltzmann
+GA_Cfg8_BaseShuffle_BaseUnif_SelTournK4 (SP),0.12901753103187427,0.0431031094816048,5.098481289545695,0.05714285714285552,mutate_shuffle_team,crossover_uniform,selection_tournament_variable_k
+GA_Cfg9_AdTargEx_Base1Pt_SelRank (SP),0.11383804080009255,0.025423269728080424,48.994311181704205,0.05714285714285552,mutate_targeted_player_exchange,crossover_one_point,selection_ranking

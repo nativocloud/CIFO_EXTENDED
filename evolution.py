@@ -29,7 +29,7 @@ def generate_population(players_data_full, size, num_teams=5, team_size=7, max_b
                                    max_budget=max_budget)
         
         # Check if the constructively generated assignment is valid
-        if candidate.is_valid(players_data_full): # Pass players_data_full for validation
+        if candidate.is_valid(): # MODIFIED: Vectorized call
             population.append(candidate)
         else:
             # Optionally, log if the constructive heuristic failed for this attempt
@@ -66,8 +66,8 @@ def genetic_algorithm(
         
     history = []
     # Ensure fitness is called with players_data
-    best_solution = min(population, key=lambda s: s.fitness(players_data))
-    best_fitness_initial = best_solution.fitness(players_data)
+    best_solution = min(population, key=lambda s: s.fitness())
+    best_fitness_initial = best_solution.fitness()
     history.append(best_fitness_initial)
 
     if verbose:
@@ -76,7 +76,7 @@ def genetic_algorithm(
     for gen in range(generations):
         new_population = []
         # Ensure fitness is called with players_data for sorting
-        population.sort(key=lambda x: x.fitness(players_data))
+        population.sort(key=lambda x: x.fitness())
         new_population.extend(population[:elite_size])
 
         while len(new_population) < population_size:
@@ -101,7 +101,7 @@ def genetic_algorithm(
                 child = mutation_operator_func(child, players_data)
             
             # Validate the child with players_data
-            if child.is_valid(players_data):
+            if child.is_valid(): # MODIFIED: Vectorized call
                 new_population.append(child)
             elif len(new_population) < population_size: # If child is invalid, try to fill with a new valid one
                 # This part might be slow if generation is hard. Consider if this is the best strategy.
@@ -118,35 +118,35 @@ def genetic_algorithm(
             
         population = new_population
         # Ensure fitness is called with players_data
-        current_best_in_pop = min(population, key=lambda s: s.fitness(players_data))
+        current_best_in_pop = min(population, key=lambda s: s.fitness())
         
         # Update overall best_solution if current_best_in_pop is better
-        if current_best_in_pop.fitness(players_data) < best_solution.fitness(players_data):
+        if current_best_in_pop.fitness() < best_solution.fitness():
             best_solution = deepcopy(current_best_in_pop) # Use deepcopy for solution objects
         
-        history.append(best_solution.fitness(players_data))
+        history.append(best_solution.fitness())
         if verbose:
-            print(f"Generation {gen+1}: Best Fitness = {best_solution.fitness(players_data)}")
+            print(f"Generation {gen+1}: Best Fitness = {best_solution.fitness()}")
 
     return best_solution, history
 
 
 def hill_climbing(initial_solution, players_data, max_iterations=1000, verbose=False):
     current_solution = initial_solution 
-    current_fitness = current_solution.fitness(players_data)
+    current_fitness = current_solution.fitness() # MODIFIED: Vectorized call
     history = [current_fitness]
     if verbose:
         print(f"Initial HC solution fitness: {current_fitness}")
 
     for iteration in range(max_iterations):
-        neighbors = current_solution.get_neighbors(players_data)
+        neighbors = current_solution.get_neighbors() # MODIFIED: Vectorized call
         if not neighbors:
             if verbose:
                 print(f"Iteration {iteration}: No valid neighbors found. Stopping.")
             break
 
-        best_neighbor = min(neighbors, key=lambda x: x.fitness(players_data))
-        best_neighbor_fitness = best_neighbor.fitness(players_data)
+        best_neighbor = min(neighbors, key=lambda x: x.fitness())
+        best_neighbor_fitness = best_neighbor.fitness()
 
         if best_neighbor_fitness < current_fitness:
             current_solution = best_neighbor 
@@ -162,8 +162,6 @@ def hill_climbing(initial_solution, players_data, max_iterations=1000, verbose=F
     if verbose:
         print(f"Hill Climbing finished. Best fitness: {current_fitness}")
     return current_solution, current_fitness, history
-
-
 def simulated_annealing(
     initial_solution, 
     players_data,     
@@ -174,8 +172,7 @@ def simulated_annealing(
     verbose=False
 ):
     current_solution = initial_solution
-    current_fitness = current_solution.fitness(players_data)
-    best_solution = deepcopy(current_solution) 
+    current_fitness = current_solution.fitness() # MODIFIED: Vectorized call 
     best_fitness = current_fitness
     
     history = [current_fitness] 
@@ -188,13 +185,12 @@ def simulated_annealing(
     while temp > final_temp:
         for _ in range(iterations_per_temp):
             iteration_count += 1
-            neighbor_solution = current_solution.get_random_neighbor(players_data)
-            neighbor_fitness = neighbor_solution.fitness(players_data)
-            
+            neighbor_solution = current_solution.get_random_neighbor() # MODIFIED: Vectorized call
+            neighbor_fitness = neighbor_solution.fitness() # MODIFIED: Vectorized call   
             delta_e = neighbor_fitness - current_fitness
             
             if delta_e < 0: 
-                current_solution = deepcopy(neighbor_solution) 
+                current_solution = neighbor_solution # Optimized: Assuming get_random_neighbor returns a new, independent object
                 current_fitness = neighbor_fitness
                 if current_fitness < best_fitness: 
                     best_solution = deepcopy(current_solution)
@@ -203,7 +199,7 @@ def simulated_annealing(
                 if temp > 1e-8: 
                     acceptance_probability = np.exp(-delta_e / temp)
                     if random.random() < acceptance_probability:
-                        current_solution = deepcopy(neighbor_solution) 
+                        current_solution = neighbor_solution # Optimized: Assuming get_random_neighbor returns a new, independent object
                         current_fitness = neighbor_fitness
             
             history.append(current_fitness) 

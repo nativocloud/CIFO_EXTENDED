@@ -1,0 +1,12 @@
+Algorithm,Mean Fitness,Std Dev Fitness,Mean Exec Time (s),Overall Best Fitness,Mutation Op,Crossover Op,Selection Op
+Hill Climbing (SP-Timing),0.05714285714285552,0.0,0.6829228401184082,0.05714285714285552,N/A,N/A,N/A
+Simulated Annealing (SP-Timing),0.05714285714285552,0.0,28.984395742416382,0.05714285714285552,N/A,N/A,N/A
+GA_Cfg9_AdTargEx_Base1Pt_SelRank (SP-Timing),0.20995626366712708,0.0,0.9865572452545166,0.20995626366712708,mutate_targeted_player_exchange,crossover_one_point,selection_ranking
+GA_Cfg4_AdTargEx_AdUnifPV_SelTournK5 (SP-Timing),0.24578072191550127,0.0,0.22261428833007812,0.24578072191550127,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,<lambda>
+GA_Cfg7_AdSwapC_BaseUnif_SelBoltz (SP-Timing),0.26186146828318896,0.0,0.9322733879089355,0.26186146828318896,mutate_swap_constrained,crossover_uniform,<lambda>
+GA_Cfg3_AdShufWTC_Ad1PtPV_SelBoltz (SP-Timing),0.2770102775666462,0.0,0.9486618041992188,0.2770102775666462,mutate_shuffle_within_team_constrained,crossover_one_point_prefer_valid,<lambda>
+GA_Cfg5_BaseSwap_Base1Pt_SelRank (SP-Timing),0.3050593786294624,0.0,0.9426641464233398,0.3050593786294624,mutate_swap,crossover_one_point,selection_ranking
+GA_Cfg6_BaseTeamShift_AdUnifPV_SelTournK3 (SP-Timing),0.330738197222578,0.0,0.17498111724853516,0.330738197222578,mutate_team_shift,crossover_uniform_prefer_valid,<lambda>
+GA_Cfg1_AdSwapC_Ad1PtPV_SelTournK3 (SP-Timing),0.35456210417116735,0.0,0.1533963680267334,0.35456210417116735,mutate_swap_constrained,crossover_one_point_prefer_valid,<lambda>
+GA_Cfg2_AdTargEx_AdUnifPV_SelRank (SP-Timing),0.4276179870598771,0.0,1.005570650100708,0.4276179870598771,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_ranking
+GA_Cfg8_BaseShuffle_BaseUnif_SelTournK4 (SP-Timing),0.47294129592133866,0.0,0.14834070205688477,0.47294129592133866,mutate_shuffle_team,crossover_uniform,<lambda>

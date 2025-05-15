@@ -76,7 +76,7 @@ def mutate_swap_constrained(solution, players_data, max_attempts=10):
         idx1, idx2 = random.sample(range(num_players), 2)
         new_assignment[idx1], new_assignment[idx2] = new_assignment[idx2], new_assignment[idx1]
         mutated_solution = LeagueSolution(players_data, assignment=new_assignment, num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
-        if mutated_solution.is_valid(players_data):
+        if mutated_solution.is_valid(): # MODIFIED: Vectorized call
             return mutated_solution
     return LeagueSolution(players_data, assignment=deepcopy(original_assignment), num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
 
@@ -99,7 +99,7 @@ def mutate_targeted_player_exchange(solution, players_data, max_attempts=20):
         new_assignment[player_idx_from_team1] = team_idx2
         new_assignment[player_idx_from_team2] = team_idx1
         mutated_solution = LeagueSolution(players_data, assignment=new_assignment, num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
-        if mutated_solution.is_valid(players_data):
+        if mutated_solution.is_valid(): # MODIFIED: Vectorized call
             return mutated_solution
     return LeagueSolution(players_data, assignment=deepcopy(original_assignment), num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
 
@@ -145,7 +145,7 @@ def mutate_shuffle_within_team_constrained(solution, players_data, max_attempts=
         new_assignment[p2_idx] = chosen_team_id
         
         mutated_solution = LeagueSolution(players_data, assignment=new_assignment, num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
-        if mutated_solution.is_valid(players_data):
+        if mutated_solution.is_valid(): # MODIFIED: Vectorized call
             return mutated_solution
     return LeagueSolution(players_data, assignment=deepcopy(original_assignment), num_teams=solution.num_teams, team_size=solution.team_size, max_budget=solution.max_budget)
 
@@ -158,7 +158,7 @@ def crossover_one_point(parent1, parent2, players_data):
         # Return a copy of parent1 as a fallback.
         return LeagueSolution(players_data, assignment=deepcopy(parent1.assignment), num_teams=parent1.num_teams, team_size=parent1.team_size, max_budget=parent1.max_budget)
     cut = random.randint(1, len_assignment - 1) # Ensure cut is not at the very beginning or end for a two-part crossover
-    child_assign = parent1.assignment[:cut] + parent2.assignment[cut:]
+    child_assign = np.concatenate((parent1.assignment[:cut], parent2.assignment[cut:])) # MODIFIED: Use np.concatenate for NumPy arrays
     # Refactored to correctly pass players_data as the first argument
     return LeagueSolution(players_data, assignment=child_assign, num_teams=parent1.num_teams, team_size=parent1.team_size, max_budget=parent1.max_budget)
 
@@ -177,9 +177,9 @@ def crossover_one_point_prefer_valid(parent1, parent2, players_data, max_attempt
     last_child_solution = None
     for _attempt in range(max_attempts):
         cut_point = random.randint(1, len_assignment - 1)
-        child_assignment1 = parent1.assignment[:cut_point] + parent2.assignment[cut_point:]
+        child_assignment1 = np.concatenate((parent1.assignment[:cut_point], parent2.assignment[cut_point:])) # MODIFIED: Use np.concatenate for NumPy arrays
         child_solution = LeagueSolution(players_data, assignment=child_assignment1, num_teams=parent1.num_teams, team_size=parent1.team_size, max_budget=parent1.max_budget)
-        if child_solution.is_valid(players_data):
+        if child_solution.is_valid(): # MODIFIED: Vectorized call
             return child_solution
         last_child_solution = child_solution # Keep the last generated (possibly invalid) child
     # If no valid child found after attempts, return the last generated one or a copy of parent1
@@ -196,7 +196,7 @@ def crossover_uniform_prefer_valid(parent1, parent2, players_data, max_attempts=
             else:
                 child_assignment.append(parent2.assignment[i])
         child_solution = LeagueSolution(players_data, assignment=child_assignment, num_teams=parent1.num_teams, team_size=parent1.team_size, max_budget=parent1.max_budget)
-        if child_solution.is_valid(players_data):
+        if child_solution.is_valid(): # MODIFIED: Vectorized call
             return child_solution
         last_child_solution = child_solution # Keep the last generated (possibly invalid) child
     # If no valid child found after attempts, return the last generated one or a copy of parent1
@@ -217,14 +217,14 @@ def selection_tournament_variable_k(population, players_data, k):
         return random.choice(population) if population else None 
         
     selected_tournament_individuals = random.sample(population, actual_k)
-    winner = min(selected_tournament_individuals, key=lambda sol: sol.fitness(players_data))
+    winner = min(selected_tournament_individuals, key=lambda sol: sol.fitness())
     return winner
 
 def selection_ranking(population, players_data):
     if not population:
         raise ValueError("Population cannot be empty for ranking selection.")
         
-    sorted_pop = sorted(population, key=lambda s: s.fitness(players_data))
+    sorted_pop = sorted(population, key=lambda s: s.fitness()) # MODIFIED: Vectorized call
     ranks = list(range(len(sorted_pop), 0, -1)) # Higher rank for better fitness (lower value)
     total_rank_sum = sum(ranks)
     
@@ -240,10 +240,10 @@ def selection_boltzmann(population, players_data, temperature, k=1):
     if temperature <= 1e-6: # Avoid issues with zero or very small temperature
         # At very low temperatures, Boltzmann selection behaves like best selection.
         # Return the best k individuals.
-        sorted_pop = sorted(population, key=lambda s: s.fitness(players_data))
+        sorted_pop = sorted(population, key=lambda s: s.fitness()) # MODIFIED: Vectorized call
         return sorted_pop[:k] if k > 1 else sorted_pop[0]
 
-    fitness_values = np.array([sol.fitness(players_data) for sol in population])
+    fitness_values = np.array([sol.fitness() for sol in population]) # MODIFIED: Vectorized call
     
     # Handle potential inf values in fitness - assign them very low probability
     # We are minimizing, so exp(-inf/T) -> 0, exp(+inf/T) -> inf (problematic)

@@ -7,198 +7,171 @@ class LeagueSolution:
         self.num_teams = num_teams
         self.team_size = team_size
         self.max_budget = max_budget
-        self.players_data_ref = players_data_full # Store a reference
+        self.players_data_ref = players_data_full # Store original list of dicts
 
-        if assignment:
-            self.assignment = assignment
+        # Pre-process player data for vectorized operations
+        self.player_salaries_np = np.array([p["Salary (€M)"] for p in players_data_full])
+        self.player_skills_np = np.array([p["Skill"] for p in players_data_full])
+        
+        self.position_map = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
+        self.num_unique_roles = len(self.position_map)
+        self.target_role_counts_np = np.array([1, 2, 2, 2]) # Order: GK, DEF, MID, FWD
+
+        self.player_positions_numeric_np = np.full(len(players_data_full), -1, dtype=int) # Default to -1 (invalid)
+        self._all_player_positions_mapped = True
+        for i, p_data in enumerate(players_data_full):
+            pos = p_data["Position"]
+            if pos in self.position_map:
+                self.player_positions_numeric_np[i] = self.position_map[pos]
+            else:
+                self._all_player_positions_mapped = False
+                # print(f"Warning: Unknown position '{pos}' for player {p_data.get('Name', 'N/A')}. This solution instance will be invalid.")
+                break 
+
+        if assignment is not None:
+            self.assignment = np.array(assignment, dtype=int)
         else:
-            # Try to generate a valid assignment using the new constructive heuristic
-            # It might still fail if constraints are too tight or player pool is difficult
-            self.assignment = self._random_valid_assignment_constructive(players_data_full)
-            # The is_valid check will happen externally, e.g., in GA population generation loop
+            # Generate a new assignment if none provided
+            # _random_valid_assignment_constructive returns a list or can be made to return np.array
+            self.assignment = np.array(self._random_valid_assignment_constructive(players_data_full), dtype=int)
 
-    def _random_valid_assignment_constructive(self, players_data_full):
+    def _random_valid_assignment_constructive(self, players_data_full_list_of_dicts):
         """Attempts to construct a valid assignment using a heuristic approach."""
-        # Create a mutable copy of players_data with original indices for assignment
-        available_players = [(i, p) for i, p in enumerate(players_data_full)]
+        available_players = [(i, p) for i, p in enumerate(players_data_full_list_of_dicts)]
         random.shuffle(available_players)
         
-        teams_players_indices = [[] for _ in range(self.num_teams)]
-        final_assignment = [-1] * len(players_data_full) # Initialize with -1 (unassigned)
-
-        # Define target positional structure for each team
-        target_roles = {"GK": 1, "DEF": 2, "MID": 2, "FWD": 2}
+        final_assignment = [-1] * len(players_data_full_list_of_dicts)
+        target_roles_dict = {"GK": 1, "DEF": 2, "MID": 2, "FWD": 2}
 
         for team_id in range(self.num_teams):
-            current_team_indices = []
             current_team_cost = 0
-            current_team_roles = {"GK": 0, "DEF": 0, "MID": 0, "FWD": 0}
             players_added_to_this_team = 0
 
-            # Attempt to fill this team according to constraints
-            # Iterate through positions to ensure structure
-            for role, count_needed in target_roles.items():
+            for role_str, count_needed in target_roles_dict.items():
                 for _ in range(count_needed):
                     player_found_for_role = False
-                    # Iterate through a shuffled list of available players to find a match
-                    # We need to iterate over a copy if we remove items, or use indices carefully
-                    indices_to_remove = []
-                    for i, (original_idx, player_data) in enumerate(available_players):
-                        if player_data["Position"] == role and \
+                    indices_to_remove_from_available = []
+                    for i_available, (original_idx, player_data) in enumerate(available_players):
+                        if player_data["Position"] == role_str and \
                            (current_team_cost + player_data["Salary (€M)"]) <= self.max_budget and \
                            players_added_to_this_team < self.team_size:
                             
-                            # Add player to team
-                            current_team_indices.append(original_idx)
                             final_assignment[original_idx] = team_id
                             current_team_cost += player_data["Salary (€M)"]
-                            current_team_roles[role] += 1
                             players_added_to_this_team += 1
-                            
-                            indices_to_remove.append(i)
+                            indices_to_remove_from_available.append(i_available)
                             player_found_for_role = True
-                            break # Found a player for this specific role slot
+                            break
                     
-                    # Remove selected players from available_players by their current index in the list
-                    # Iterate in reverse to avoid index shifting issues
-                    for idx_to_remove in sorted(indices_to_remove, reverse=True):
+                    for idx_to_remove in sorted(indices_to_remove_from_available, reverse=True):
                         available_players.pop(idx_to_remove)
-
-                    if not player_found_for_role:
-                        # Could not find a suitable player for this role slot under budget/size constraints
-                        # This indicates a potential issue with the player pool or overly strict constraints
-                        # For now, this might lead to an invalid team if not all roles are filled.
-                        # The external is_valid() check will catch this.
-                        pass 
-            
-            teams_players_indices[team_id] = current_team_indices
-
-        # Check if all players were assigned (should be if team_size * num_teams == len(players_data_full))
-        if len(players_data_full) == self.num_teams * self.team_size and -1 in final_assignment:
-            # This means not all players were assigned, which is an issue with the constructive logic
-            # or player pool. For now, return the potentially incomplete/invalid assignment.
-            # The is_valid check will handle it.
-            pass # Or raise an error, or try to fill remaining players randomly (less ideal)
-
         return final_assignment
 
-    def is_valid(self, players_data_ref_for_check): # players_data_ref_for_check is self.players_data_ref
-        if not self.assignment or len(self.assignment) != len(players_data_ref_for_check):
-            return False # Basic check for assignment existence and length
+    def is_valid(self): # Vectorized version
+        if not self._all_player_positions_mapped:
+            return False # Invalid data mapping from init
 
-        teams = [[] for _ in range(self.num_teams)]
-        player_assigned_count = [0] * len(players_data_ref_for_check)
-
-        for player_idx, team_id in enumerate(self.assignment):
-            if not (0 <= team_id < self.num_teams):
-                return False # Invalid team_id
-            teams[team_id].append(players_data_ref_for_check[player_idx])
-            player_assigned_count[player_idx] += 1
+        if self.assignment is None or len(self.assignment) != len(self.player_salaries_np):
+            return False
         
-        # Check if each player is assigned to exactly one team
-        if any(count != 1 for count in player_assigned_count):
-             # This check is implicitly handled if len(assignment) == num_players and all team_ids are valid
-             # and team sizes add up. The main concern is double assignment or unassignment.
-             # The current assignment structure (list of team_ids for each player) ensures each player has one assignment.
-             # The issue would be if not all players are in the assignment list, or list is too long.
-             # The initial check for len(self.assignment) != len(players_data_ref_for_check) covers this.
-            pass
+        assignment_arr = self.assignment # Is already a NumPy array
 
-        for team_idx, team_players in enumerate(teams):
-            if len(team_players) != self.team_size:
-                return False
-            roles = {"GK": 0, "DEF": 0, "MID": 0, "FWD": 0}
-            budget = 0
-            for p_data in team_players:
-                roles[p_data["Position"]] += 1
-                budget += p_data["Salary (€M)"]
+        if not np.all((assignment_arr >= 0) & (assignment_arr < self.num_teams)):
+            return False # Invalid team_id values present
+        if -1 in assignment_arr: # Check if any player remained unassigned from constructive heuristic
+            return False
+
+        team_counts = np.bincount(assignment_arr, minlength=self.num_teams)
+        if not np.all(team_counts == self.team_size):
+            return False
+
+        for team_id in range(self.num_teams):
+            players_in_team_mask = (assignment_arr == team_id)
             
-            if roles["GK"] != 1 or roles["DEF"] != 2 or roles["MID"] != 2 or roles["FWD"] != 2:
+            team_budget = np.sum(self.player_salaries_np[players_in_team_mask])
+            if team_budget > self.max_budget:
                 return False
-            if budget > self.max_budget:
+            
+            team_positions_numeric = self.player_positions_numeric_np[players_in_team_mask]
+            role_counts = np.bincount(team_positions_numeric, minlength=self.num_unique_roles)
+            if not np.array_equal(role_counts, self.target_role_counts_np):
                 return False
         return True
 
-    def fitness(self, players_data_ref_for_fitness): # players_data_ref_for_fitness is self.players_data_ref
-        if not self.is_valid(players_data_ref_for_fitness):
+    def fitness(self): # Vectorized version
+        if not self.is_valid():
             return float("inf")
         
-        team_skills_values = [[] for _ in range(self.num_teams)]
-        for player_idx, team_id in enumerate(self.assignment):
-            team_skills_values[team_id].append(players_data_ref_for_fitness[player_idx]["Skill"])
+        assignment_arr = self.assignment # Is already a NumPy array
+        team_skill_sums = np.bincount(assignment_arr, weights=self.player_skills_np, minlength=self.num_teams)
         
-        avg_skills = []
-        for skills_in_team in team_skills_values:
-            if not skills_in_team: # Should not happen if team_size > 0 and solution is valid
-                avg_skills.append(0) # Or handle as error, though is_valid should prevent this
-            else:
-                avg_skills.append(np.mean(skills_in_team))
-        
-        if not avg_skills: # Should not happen if num_teams > 0
-            return float("inf") # Or handle as error
-            
+        # is_valid() ensures all team_counts are self.team_size, so no division by zero here.
+        avg_skills = team_skill_sums / self.team_size 
         return np.std(avg_skills)
 
     def copy(self):
-        # Crucially, pass the players_data_ref to the new instance
-        return LeagueSolution(self.players_data_ref, assignment=deepcopy(self.assignment), \
-                              num_teams=self.num_teams, team_size=self.team_size, \
+        # __init__ will re-derive NumPy arrays from self.players_data_ref
+        return LeagueSolution(self.players_data_ref, 
+                              assignment=deepcopy(self.assignment), # deepcopy for the assignment array itself
+                              num_teams=self.num_teams, 
+                              team_size=self.team_size, 
                               max_budget=self.max_budget)
 
 class LeagueHillClimbingSolution(LeagueSolution):
     def __init__(self, players_data_full, assignment=None, num_teams=5, team_size=7, max_budget=750):
         super().__init__(players_data_full, assignment, num_teams, team_size, max_budget)
 
-    def get_neighbors(self, players_data_ref_for_neighbors): # players_data_ref_for_neighbors is self.players_data_ref
+    def get_neighbors(self): # Removed players_data_ref argument
         neighbors = []
         num_players = len(self.assignment)
         for i in range(num_players):
             for j in range(i + 1, num_players):
-                new_assign = deepcopy(self.assignment)
-                new_assign[i], new_assign[j] = new_assign[j], new_assign[i] # Swap player assignments
+                # Create a copy of the current assignment for modification
+                new_assign_arr = self.assignment.copy() # Use NumPy's copy for the array
+                new_assign_arr[i], new_assign_arr[j] = new_assign_arr[j], new_assign_arr[i]
                 
-                # Create a new solution instance with the swapped assignment
-                # Pass players_data_ref to the constructor
-                neighbor = LeagueHillClimbingSolution(players_data_ref_for_neighbors, assignment=new_assign, \
-                                                    num_teams=self.num_teams, team_size=self.team_size, \
+                neighbor = LeagueHillClimbingSolution(self.players_data_ref, assignment=new_assign_arr,
+                                                    num_teams=self.num_teams, team_size=self.team_size,
                                                     max_budget=self.max_budget)
-                if neighbor.is_valid(players_data_ref_for_neighbors):
+                if neighbor.is_valid(): # Call new is_valid
                     neighbors.append(neighbor)
         return neighbors
     
     def copy(self):
-        return LeagueHillClimbingSolution(self.players_data_ref, assignment=deepcopy(self.assignment),\
-                                          num_teams=self.num_teams, team_size=self.team_size,\
+        return LeagueHillClimbingSolution(self.players_data_ref, assignment=deepcopy(self.assignment),
+                                          num_teams=self.num_teams, team_size=self.team_size,
                                           max_budget=self.max_budget)
 
 class LeagueSASolution(LeagueSolution):
     def __init__(self, players_data_full, assignment=None, num_teams=5, team_size=7, max_budget=750):
         super().__init__(players_data_full, assignment, num_teams, team_size, max_budget)
 
-    def get_random_neighbor(self, players_data_ref_for_neighbor): # players_data_ref_for_neighbor is self.players_data_ref
+    def get_random_neighbor(self): # Removed players_data_ref argument
         max_attempts = 100 
         attempts = 0
         num_players = len(self.assignment)
 
         while attempts < max_attempts:
+            if num_players < 2:
+                 return self.copy() # Cannot swap if less than 2 players
             idx1, idx2 = random.sample(range(num_players), 2)
             
-            candidate_assignment = deepcopy(self.assignment)
-            candidate_assignment[idx1], candidate_assignment[idx2] = candidate_assignment[idx2], candidate_assignment[idx1]
+            # Create a copy of the current assignment for modification
+            candidate_assignment_arr = self.assignment.copy() # Use NumPy's copy for the array
+            candidate_assignment_arr[idx1], candidate_assignment_arr[idx2] = candidate_assignment_arr[idx2], candidate_assignment_arr[idx1]
             
-            potential_neighbor = LeagueSASolution(players_data_ref_for_neighbor, assignment=candidate_assignment, \
-                                                num_teams=self.num_teams, team_size=self.team_size, \
+            potential_neighbor = LeagueSASolution(self.players_data_ref, assignment=candidate_assignment_arr,
+                                                num_teams=self.num_teams, team_size=self.team_size,
                                                 max_budget=self.max_budget)
             
-            if potential_neighbor.is_valid(players_data_ref_for_neighbor):
+            if potential_neighbor.is_valid(): # Call new is_valid
                 return potential_neighbor
             attempts += 1
             
-        # Fallback: if no valid neighbor is found, return a copy of the current solution.
-        return self.copy() # Uses the updated copy method
+        return self.copy()
     
     def copy(self):
-        return LeagueSASolution(self.players_data_ref, assignment=deepcopy(self.assignment),\
-                                num_teams=self.num_teams, team_size=self.team_size,\
+        return LeagueSASolution(self.players_data_ref, assignment=deepcopy(self.assignment),
+                                num_teams=self.num_teams, team_size=self.team_size,
                                 max_budget=self.max_budget)
 

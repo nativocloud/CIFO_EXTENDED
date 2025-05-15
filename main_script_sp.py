@@ -62,7 +62,7 @@ IMAGES_SP_DIR = "/home/ubuntu/CIFO_EXTENDED_Project/images_sp" # Updated directo
 # Ensure the directory exists
 if not os.path.exists(IMAGES_SP_DIR):
     os.makedirs(IMAGES_SP_DIR)
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Created directory: {IMAGES_SP_DIR}")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Created directory: {IMAGES_SP_DIR}")
 
 # Load player data
 players_df = pd.read_csv("players.csv", sep=";")
@@ -178,17 +178,17 @@ NUM_RUNS = 30 # Parameter for number of runs (e.g., 10, 30)
 # %%
 def main():
     script_total_start_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Single-Processor Script execution started.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Single-Processor Script execution started.")
 
     data_load_start_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Loading player data...")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Loading player data...")
     # Player data is already loaded globally
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Player data loaded successfully. Total players: {len(players_data)}")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Player data loaded successfully. Total players: {len(players_data)}")
     if players_data:
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] First player data: {players_data[0]}")
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] All algorithms (HC, SA, GA) will be run {NUM_RUNS} times each.")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] First player data: {players_data[0]}")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] All algorithms (HC, SA, GA) will be run {NUM_RUNS} times each.")
     data_load_end_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Data loading and setup took {data_load_end_time - data_load_start_time:.2f} seconds.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Data loading and setup took {data_load_end_time - data_load_start_time:.2f} seconds.")
 
     all_results_summary = []
 
@@ -199,7 +199,7 @@ def main():
 
     # %%
     hc_section_start_time = time.time()
-    print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] --- Starting Hill Climbing Algorithm ({NUM_RUNS} runs) ---")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Hill Climbing Algorithm ({NUM_RUNS} runs) ---")
 
     hc_all_fitness_values = []
     hc_all_exec_times = []
@@ -208,21 +208,21 @@ def main():
     best_hc_history_overall = [] # For the best run
 
     for i in range(NUM_RUNS):
-        print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] HC Run {i+1}/{NUM_RUNS}...")
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] HC Run {i+1}/{NUM_RUNS}...")
         start_time_hc_run = time.time()
         
         initial_hc_solution_run = LeagueHillClimbingSolution(players_data, num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
         retry_attempts_hc = 0
         max_retry_hc = 5
         while not initial_hc_solution_run.is_valid(players_data) and retry_attempts_hc < max_retry_hc:
-            print(f"    [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] HC Run {i+1}: Initial solution invalid, retrying generation ({retry_attempts_hc+1})...")
+            print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] HC Run {i+1}: Initial solution invalid, retrying generation ({retry_attempts_hc+1})...")
             initial_hc_solution_run = LeagueHillClimbingSolution(players_data, num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
             retry_attempts_hc += 1
         
         if not initial_hc_solution_run.is_valid(players_data):
-            print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] HC Run {i+1} failed to create a valid initial solution after {max_retry_hc} retries. Skipping run.")
-            hc_all_fitness_values.append(float(\"nan\"))
-            hc_all_exec_times.append(float(\"nan\"))
+            print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] HC Run {i+1} failed to create a valid initial solution after {max_retry_hc} retries. Skipping run.")
+            hc_all_fitness_values.append(float('nan'))
+            hc_all_exec_times.append(float('nan'))
             continue
 
         hc_solution_obj_run, hc_fitness_val_run, hc_history_convergence_run = hill_climbing(
@@ -242,15 +242,15 @@ def main():
                 best_hc_solution_overall = hc_solution_obj_run
                 best_hc_history_overall = hc_history_convergence_run
         else:
-            print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] HC Run {i+1} did not find a valid solution during search.")
-            hc_all_fitness_values.append(float(\"nan\"))
-            hc_all_exec_times.append(float(\"nan\"))
+            print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] HC Run {i+1} did not find a valid solution during search.")
+            hc_all_fitness_values.append(float('nan'))
+            hc_all_exec_times.append(float('nan'))
 
     hc_mean_fitness = np.nanmean(hc_all_fitness_values) if hc_all_fitness_values else float("nan")
     hc_std_fitness = np.nanstd(hc_all_fitness_values) if hc_all_fitness_values else float("nan")
     hc_mean_exec_time = np.nanmean(hc_all_exec_times) if hc_all_exec_times else float("nan")
 
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Hill Climbing ({NUM_RUNS} runs) processing finished.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Hill Climbing ({NUM_RUNS} runs) processing finished.")
     print(f"  Mean Best Fitness: {hc_mean_fitness:.4f}")
     print(f"  Std Dev Best Fitness: {hc_std_fitness:.4f}")
     print(f"  Mean Execution Time per run: {hc_mean_exec_time:.2f}s")
@@ -271,20 +271,20 @@ def main():
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
         plt.savefig(os.path.join(IMAGES_SP_DIR, "hc_convergence_sp.png")) # Updated path
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved Hill Climbing convergence plot to {IMAGES_SP_DIR}/hc_convergence_sp.png")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Hill Climbing convergence plot to {IMAGES_SP_DIR}/hc_convergence_sp.png")
         plt.close()
     else:
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Hill Climbing did not find any valid solution across all runs that produced a best overall.")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Hill Climbing did not find any valid solution across all runs that produced a best overall.")
         all_results_summary.append({
             "Algorithm": "Hill Climbing (SP)", 
             "Mean Fitness": hc_mean_fitness, 
             "Std Dev Fitness": hc_std_fitness, 
             "Mean Exec Time (s)": hc_mean_exec_time,
-            "Overall Best Fitness": float(\"nan\"),
+            "Overall Best Fitness": float('nan'),
             "Mutation Op": "N/A", "Crossover Op": "N/A", "Selection Op": "N/A"
         })
     hc_section_end_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Hill Climbing section took {hc_section_end_time - hc_section_start_time:.2f} seconds.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Hill Climbing section took {hc_section_end_time - hc_section_start_time:.2f} seconds.")
 
 
     # %% [markdown]
@@ -294,7 +294,7 @@ def main():
 
     # %%
     sa_section_start_time = time.time()
-    print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] --- Starting Simulated Annealing Algorithm ({NUM_RUNS} runs) ---")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Simulated Annealing Algorithm ({NUM_RUNS} runs) ---")
 
     sa_all_fitness_values = []
     sa_all_exec_times = []
@@ -310,19 +310,19 @@ def main():
     }
 
     for i in range(NUM_RUNS):
-        print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] SA Run {i+1}/{NUM_RUNS}...")
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] SA Run {i+1}/{NUM_RUNS}...")
         initial_sa_solution = LeagueSASolution(players_data, num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
         retry_attempts_sa = 0
         max_retry_sa = 5
         while not initial_sa_solution.is_valid(players_data) and retry_attempts_sa < max_retry_sa:
-            print(f"    [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] SA Run {i+1}: Initial solution invalid, retrying generation ({retry_attempts_sa+1})...")
+            print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] SA Run {i+1}: Initial solution invalid, retrying generation ({retry_attempts_sa+1})...")
             initial_sa_solution = LeagueSASolution(players_data, num_teams=NUM_TEAMS, team_size=TEAM_SIZE, max_budget=MAX_BUDGET)
             retry_attempts_sa += 1
 
         if not initial_sa_solution.is_valid(players_data):
-            print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] SA Run {i+1} failed to create a valid initial solution after {max_retry_sa} retries. Skipping run.")
-            sa_all_fitness_values.append(float(\"nan\"))
-            sa_all_exec_times.append(float(\"nan\"))
+            print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] SA Run {i+1} failed to create a valid initial solution after {max_retry_sa} retries. Skipping run.")
+            sa_all_fitness_values.append(float('nan'))
+            sa_all_exec_times.append(float('nan'))
             continue
 
         start_time_sa_run = time.time()
@@ -345,15 +345,15 @@ def main():
                 best_sa_solution_overall = sa_solution_run
                 best_sa_history_overall = sa_history_run
         else:
-            print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] SA Run {i+1} did not find a valid solution during search.")
-            sa_all_fitness_values.append(float(\"nan\"))
-            sa_all_exec_times.append(float(\"nan\"))
+            print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] SA Run {i+1} did not find a valid solution during search.")
+            sa_all_fitness_values.append(float('nan'))
+            sa_all_exec_times.append(float('nan'))
 
     sa_mean_fitness = np.nanmean(sa_all_fitness_values) if sa_all_fitness_values else float("nan")
     sa_std_fitness = np.nanstd(sa_all_fitness_values) if sa_all_fitness_values else float("nan")
     sa_mean_exec_time = np.nanmean(sa_all_exec_times) if sa_all_exec_times else float("nan")
 
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Simulated Annealing ({NUM_RUNS} runs) processing finished.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Simulated Annealing ({NUM_RUNS} runs) processing finished.")
     print(f"  Mean Best Fitness: {sa_mean_fitness:.4f}")
     print(f"  Std Dev Best Fitness: {sa_std_fitness:.4f}")
     print(f"  Mean Execution Time per run: {sa_mean_exec_time:.2f}s")
@@ -374,20 +374,20 @@ def main():
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
         plt.savefig(os.path.join(IMAGES_SP_DIR, "sa_convergence_sp.png")) # Updated path
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved Simulated Annealing convergence plot to {IMAGES_SP_DIR}/sa_convergence_sp.png")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved Simulated Annealing convergence plot to {IMAGES_SP_DIR}/sa_convergence_sp.png")
         plt.close()
     else:
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Simulated Annealing did not find any valid solution across all runs that produced a best overall.")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Simulated Annealing did not find any valid solution across all runs that produced a best overall.")
         all_results_summary.append({
             "Algorithm": "Simulated Annealing (SP)", 
             "Mean Fitness": sa_mean_fitness, 
             "Std Dev Fitness": sa_std_fitness, 
             "Mean Exec Time (s)": sa_mean_exec_time,
-            "Overall Best Fitness": float(\"nan\"),
+            "Overall Best Fitness": float('nan'),
             "Mutation Op": "N/A", "Crossover Op": "N/A", "Selection Op": "N/A"
         })
     sa_section_end_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Simulated Annealing section took {sa_section_end_time - sa_section_start_time:.2f} seconds.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Simulated Annealing section took {sa_section_end_time - sa_section_start_time:.2f} seconds.")
 
     # %% [markdown]
     # ## 3. Genetic Algorithms
@@ -396,7 +396,7 @@ def main():
 
     # %%
     ga_section_start_time = time.time()
-    print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] --- Starting Genetic Algorithms ({NUM_RUNS} runs per config) ---")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Starting Genetic Algorithms ({NUM_RUNS} runs per config) ---")
     ga_params_dict = {
         "population_size": 50,
         "generations": 100,
@@ -481,7 +481,7 @@ def main():
 
     for config_idx, ga_config_dict in enumerate(ga_configs_new):
         config_name = ga_config_dict["name"]
-        print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] --- Running GA Configuration: {config_name} ({NUM_RUNS} runs) ---")
+        print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Running GA Configuration: {config_name} ({NUM_RUNS} runs) ---")
         
         ga_all_fitness_values_config = []
         ga_all_exec_times_config = []
@@ -490,7 +490,7 @@ def main():
         best_ga_history_overall_config = []
 
         for i in range(NUM_RUNS):
-            print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] GA Run {i+1}/{NUM_RUNS} for {config_name}...")
+            print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Run {i+1}/{NUM_RUNS} for {config_name}...")
             start_time_ga_run = time.time()
             
             best_solution_ga_run, history_ga_run = genetic_algorithm(
@@ -521,15 +521,15 @@ def main():
                     best_ga_solution_overall_config = best_solution_ga_run
                     best_ga_history_overall_config = history_ga_run
             else:
-                print(f"  [{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] GA Run {i+1} for {config_name} did not find a valid solution.")
-                ga_all_fitness_values_config.append(float(\"nan\"))
+                print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Run {i+1} for {config_name} did not find a valid solution.")
+                ga_all_fitness_values_config.append(float('nan'))
                 ga_all_exec_times_config.append(ga_exec_time_run) 
 
         ga_mean_fitness_config = np.nanmean(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
         ga_std_fitness_config = np.nanstd(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
         ga_mean_exec_time_config = np.nanmean(ga_all_exec_times_config) if ga_all_exec_times_config else float("nan")
 
-        print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] GA Configuration {config_name} processing finished.")
+        print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {config_name} processing finished.")
         print(f"  Mean Best Fitness: {ga_mean_fitness_config:.4f}")
         print(f"  Std Dev Best Fitness: {ga_std_fitness_config:.4f}")
         print(f"  Mean Execution Time per run: {ga_mean_exec_time_config:.2f}s")
@@ -553,34 +553,34 @@ def main():
             plt.grid(True)
             safe_config_name = config_name.replace(" ", "_").replace("(", "").replace(")", "").replace(",", "") 
             plt.savefig(os.path.join(IMAGES_SP_DIR, f"ga_convergence_sp_{safe_config_name}.png")) # Updated path
-            print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved GA convergence plot to {IMAGES_SP_DIR}/ga_convergence_sp_{safe_config_name}.png")
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {IMAGES_SP_DIR}/ga_convergence_sp_{safe_config_name}.png")
             plt.close()
         else:
-            print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] GA Config {config_name} did not find any valid solution across all runs that produced a best overall.")
+            print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Config {config_name} did not find any valid solution across all runs that produced a best overall.")
             all_results_summary.append({
                 "Algorithm": f"{config_name} (SP)", 
                 "Mean Fitness": ga_mean_fitness_config, 
                 "Std Dev Fitness": ga_std_fitness_config, 
                 "Mean Exec Time (s)": ga_mean_exec_time_config,
-                "Overall Best Fitness": float(\"nan\"),
+                "Overall Best Fitness": float('nan'),
                 "Mutation Op": ga_config_dict["mutation_operator_func"].__name__,
                 "Crossover Op": ga_config_dict["crossover_operator_func"].__name__,
                 "Selection Op": ga_config_dict["selection_operator_func"].__name__
             })
     ga_section_end_time = time.time()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Genetic Algorithms section took {ga_section_end_time - ga_section_start_time:.2f} seconds.")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Genetic Algorithms section took {ga_section_end_time - ga_section_start_time:.2f} seconds.")
 
     # %% [markdown]
     # ## 4. Comparative Analysis
 
     # %%
-    print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] --- Generating Comparative Analysis Plots (SP) ---")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Generating Comparative Analysis Plots (SP) ---")
     results_df = pd.DataFrame(all_results_summary)
     print("\nOverall Results Summary Table (Single-Processor):")
-    with pd.option_context(\"display.max_rows\", None, \"display.max_columns\", None, \"display.width\", 1000):
+    with pd.option_context("display.max_rows", None, "display.max_columns", None, "display.width", 1000):
         print(results_df)
     results_df.to_csv(os.path.join(IMAGES_SP_DIR, "comparative_results_sp.csv"), index=False) # Updated path
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved comparative results CSV to {IMAGES_SP_DIR}/comparative_results_sp.csv")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative results CSV to {IMAGES_SP_DIR}/comparative_results_sp.csv")
 
 
     plt.figure(figsize=(15, 8)) 
@@ -593,7 +593,7 @@ def main():
     plt.tight_layout() 
     plt.savefig(os.path.join(IMAGES_SP_DIR, "comparative_fitness_sp.png")) # Updated path
     plt.close()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved comparative fitness plot to {IMAGES_SP_DIR}/comparative_fitness_sp.png")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative fitness plot to {IMAGES_SP_DIR}/comparative_fitness_sp.png")
 
     plt.figure(figsize=(15, 8)) 
     plot_df_time = results_df.dropna(subset=["Mean Exec Time (s)"])
@@ -605,10 +605,10 @@ def main():
     plt.tight_layout()
     plt.savefig(os.path.join(IMAGES_SP_DIR, "comparative_times_sp.png")) # Updated path
     plt.close()
-    print(f"[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Saved comparative execution time plot to {IMAGES_SP_DIR}/comparative_times_sp.png")
+    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved comparative execution time plot to {IMAGES_SP_DIR}/comparative_times_sp.png")
 
     script_total_end_time = time.time()
-    print(f"\n[{time.strftime(\"%Y-%m-%d %H:%M:%S\")}] Single-Processor Script execution finished. Total time: {script_total_end_time - script_total_start_time:.2f} seconds.")
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Single-Processor Script execution finished. Total time: {script_total_end_time - script_total_start_time:.2f} seconds.")
 
 # %%
 if __name__ == "__main__":
