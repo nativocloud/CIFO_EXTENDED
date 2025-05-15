@@ -428,9 +428,10 @@ for config in ga_configurations:
     best_ga_fitness_config_overall = float("inf")
     best_ga_history_config_overall = []
 
-    for i in range(NUM_RUNS):
-        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Run {i+1}/{NUM_RUNS} for {config["name"]}...")
-        start_time_ga_run = time.time()
+    for i in range(NUM_RUNS)        config_name_val = config["name"]
+        timestamp_val = time.strftime("%Y-%m-%d %H:%M:%S")
+        run_count_val = f"{i+1}/{NUM_RUNS}"
+        print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")       start_time_ga_run = time.time()
         
         # Call GA with parameters from config
         ga_solution_obj_run, ga_history_convergence_run = genetic_algorithm(
@@ -461,7 +462,10 @@ for config in ga_configurations:
                 best_ga_solution_config_overall = ga_solution_obj_run
                 best_ga_history_config_overall = ga_history_convergence_run
         else:
-            print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Run {i+1} for {config["name"]} did not return a valid solution object.")
+config_name_val = config["name"]
+        timestamp_val = time.strftime('%Y-%m-%d %H:%M:%S')
+        run_count_val = f"{i+1}/{NUM_RUNS}"
+        print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")ot return a valid solution object.")
             ga_all_fitness_values_config.append(float('nan'))
             ga_all_exec_times_config.append(float('nan'))
 
