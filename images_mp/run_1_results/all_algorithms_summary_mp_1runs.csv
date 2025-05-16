@@ -1,0 +1,10 @@
+Algorithm,Mean Fitness,Std Dev Fitness,Mean Exec Time (s),Overall Best Fitness,Mutation Op,Crossover Op,Selection Op
+Hill Climbing (MP-1 runs),0.05714285714285552,0.0,0.4625568389892578,0.05714285714285552,N/A,N/A,N/A
+Simulated Annealing (MP-1 runs),0.05714285714285552,0.0,16.680005073547363,0.05714285714285552,N/A,N/A,N/A
+GA: GA_Config_1_SwapConst1PtPreferVTournVarK (MP-1 runs),0.10690449676496672,0.0,4.04441499710083,0.10690449676496672,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
+GA: GA_Config_2_TargetExchUnifPreferVRank (MP-1 runs),0.05714285714285552,0.0,40.02432036399841,0.05714285714285552,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_ranking
+GA: GA_Config_3_ShuffleTeamConst1PtPreferVBoltz (MP-1 runs),0.13997084244474906,0.0,42.352792263031006,0.13997084244474906,mutate_shuffle_within_team_constrained,crossover_one_point_prefer_valid,selection_boltzmann
+GA: GA_Config_4_SwapConst1PtPreferVTournVarK_150Gen (MP-1 runs),0.05714285714285552,0.0,10.772353172302246,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
+GA: GA_Config_5_SwapConst1PtPreferVTournVarK_100Pop (MP-1 runs),0.05714285714285552,0.0,8.43045449256897,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
+GA: GA_Config_6_SwapConst1PtPreferVTournVarK_MutRate0.1 (MP-1 runs),0.05714285714285552,0.0,4.083188056945801,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
+GA: GA_Config_7_SwapConst1PtPreferVTournVarK_MutRate0.3 (MP-1 runs),0.05714285714285552,0.0,4.122913837432861,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
