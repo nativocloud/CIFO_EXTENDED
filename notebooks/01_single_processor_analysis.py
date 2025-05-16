@@ -433,10 +433,12 @@ for config in ga_configurations:
     best_ga_fitness_config_overall = float("inf")
     best_ga_history_config_overall = []
 
-    for i in range(NUM_RUNS)        config_name_val = config["name"]
+    for i in range(NUM_RUNS):
+        config_name_val = config["name"]
         timestamp_val = time.strftime("%Y-%m-%d %H:%M:%S")
         run_count_val = f"{i+1}/{NUM_RUNS}"
-        print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")       start_time_ga_run = time.time()
+        print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")
+        start_time_ga_run = time.time()
         
         # Call GA with parameters from config
         ga_solution_obj_run, ga_history_convergence_run = genetic_algorithm(
@@ -467,10 +469,11 @@ for config in ga_configurations:
                 best_ga_solution_config_overall = ga_solution_obj_run
                 best_ga_history_config_overall = ga_history_convergence_run
         else:
-config_name_val = config["name"]
-        timestamp_val = time.strftime('%Y-%m-%d %H:%M:%S')
-        run_count_val = f"{i+1}/{NUM_RUNS}"
-        print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")ot return a valid solution object.")
+            config_name_val = config["name"]
+            timestamp_val = time.strftime('%Y-%m-%d %H:%M:%S')
+            run_count_val = f"{i+1}/{NUM_RUNS}"
+            print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val}...")
+            print(f"    [{timestamp_val}] GA Run {run_count_val} for {config_name_val} did not return a valid solution object.")
             ga_all_fitness_values_config.append(float('nan'))
             ga_all_exec_times_config.append(float('nan'))
 
@@ -478,12 +481,12 @@ config_name_val = config["name"]
     ga_std_fitness_config = np.nanstd(ga_all_fitness_values_config) if ga_all_fitness_values_config else float("nan")
     ga_mean_exec_time_config = np.nanmean(ga_all_exec_times_config) if ga_all_exec_times_config else float("nan")
 
-    print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {config["name"]} ({NUM_RUNS} runs) processing finished.")
+    print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {config['name']} ({NUM_RUNS} runs) processing finished.")
     print(f"    Mean Best Fitness: {ga_mean_fitness_config:.4f}")
     print(f"    Std Dev Best Fitness: {ga_std_fitness_config:.4f}")
     print(f"    Mean Execution Time per run: {ga_mean_exec_time_config:.2f}s")
     if best_ga_solution_config_overall:
-        print(f"    Overall Best GA Fitness for {config["name"]}: {best_ga_fitness_config_overall:.4f}")
+        print(f"    Overall Best GA Fitness for {config['name']}: {best_ga_fitness_config_overall:.4f}")
         all_results_summary.append({
             "Algorithm": config["name"] + " (SP)", 
             "Mean Fitness": ga_mean_fitness_config, 
@@ -496,15 +499,15 @@ config_name_val = config["name"]
         })
         plt.figure(figsize=(10, 6))
         plt.plot(best_ga_history_config_overall, marker="o", linestyle="-")
-        plt.title(f"GA Convergence ({config["name"]}) - Best of {NUM_RUNS} Runs - SP")
+        plt.title(f"GA Convergence ({config['name']}) - Best of {NUM_RUNS} Runs - SP")
         plt.xlabel("Generation")
         plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
         plt.grid(True)
-        plt.savefig(os.path.join(IMAGES_SP_DIR, f"ga_convergence_sp_{config["name"]}.png")) # Updated path
-        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {IMAGES_SP_DIR}/ga_convergence_sp_{config["name"]}.png")
+        plt.savefig(os.path.join(IMAGES_SP_DIR, f"ga_convergence_sp_{config['name']}.png")) # Updated path
+        print(f"    [{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved GA convergence plot to {IMAGES_SP_DIR}/ga_convergence_sp_{config['name']}.png")
         plt.close()
     else:
-        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {config["name"]} did not find any valid solution across all runs that produced a best overall.")
+        print(f"  [{time.strftime('%Y-%m-%d %H:%M:%S')}] GA Configuration {config['name']} did not find any valid solution across all runs that produced a best overall.")
         all_results_summary.append({
             "Algorithm": config["name"] + " (SP)", 
             "Mean Fitness": ga_mean_fitness_config, 
@@ -525,9 +528,9 @@ summary_df.to_csv(summary_filename, index=False, sep=";")
 print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Overall summary saved to {summary_filename}")
 
 script_total_end_time = time.time()
-print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Single-Processor Script execution finished. Total time: {script_total_end_time - script_total_start_time:.2f} seconds.")
+print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Single-Processor Script execution finished. Total time: {time.time() - script_total_start_time:.2f} seconds.")
 
 # Execute the main function if the script is run directly (or cell is executed in notebook)
 if __name__ == "__main__" or __name__ == "builtins": # For notebook execution
-main()
+    main()
 

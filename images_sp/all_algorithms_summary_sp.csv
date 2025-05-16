@@ -1,0 +1,10 @@
+Algorithm;Mean Fitness;Std Dev Fitness;Mean Exec Time (s);Overall Best Fitness;Mutation Op;Crossover Op;Selection Op
+Hill Climbing (SP);0.05714285714285552;0.0;0.29692864418029785;0.05714285714285552;N/A;N/A;N/A
+Simulated Annealing (SP);0.05714285714285552;0.0;28.22232437133789;0.05714285714285552;N/A;N/A;N/A
+GA_Config_1_SwapConst1PtPreferVTournVarK (SP);0.05714285714285552;0.0;4.096873760223389;0.05714285714285552;mutate_swap_constrained;crossover_one_point_prefer_valid;selection_tournament_variable_k
+GA_Config_2_TargetExchUnifPreferVRank (SP);0.10690449676496672;0.0;41.125508308410645;0.10690449676496672;mutate_targeted_player_exchange;crossover_uniform_prefer_valid;selection_ranking
+GA_Config_3_ShuffleTeamConst1PtPreferVBoltz (SP);0.10690449676496672;0.0;40.48609256744385;0.10690449676496672;mutate_shuffle_within_team_constrained;crossover_one_point_prefer_valid;selection_boltzmann
+GA_Config_4_SwapConst1PtPreferVTournVarK_150Gen (SP);0.05714285714285552;0.0;8.223144054412842;0.05714285714285552;mutate_swap_constrained;crossover_one_point_prefer_valid;selection_tournament_variable_k
+GA_Config_5_SwapConst1PtPreferVTournVarK_100Pop (SP);0.05714285714285552;0.0;8.081382989883423;0.05714285714285552;mutate_swap_constrained;crossover_one_point_prefer_valid;selection_tournament_variable_k
+GA_Config_6_SwapConst1PtPreferVTournVarK_MutRate0.1 (SP);0.05714285714285552;0.0;4.001851558685303;0.05714285714285552;mutate_swap_constrained;crossover_one_point_prefer_valid;selection_tournament_variable_k
+GA_Config_7_SwapConst1PtPreferVTournVarK_MutRate0.3 (SP);0.05714285714285552;0.0;4.190807819366455;0.05714285714285552;mutate_swap_constrained;crossover_one_point_prefer_valid;selection_tournament_variable_k

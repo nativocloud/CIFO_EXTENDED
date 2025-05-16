@@ -1,7 +1,0 @@
-Algorithm,Mean Fitness,Std Dev Fitness,Mean Exec Time (s),Overall Best Fitness,Mutation Op,Crossover Op,Selection Op
-Hill Climbing (MP-5 runs),0.06709518506727775,0.01990465584884448,0.46889443397521974,0.05714285714285552,N/A,N/A,N/A
-Simulated Annealing (MP-5 runs),0.05714285714285552,0.0,17.598721027374268,0.05714285714285552,N/A,N/A,N/A
-GA: GA_Config_1_SwapConst1PtPreferVTournVarK (MP-5 runs),0.0770475129917,0.024378125167686872,6.0489390850067135,0.05714285714285552,mutate_swap_constrained,crossover_one_point_prefer_valid,selection_tournament_variable_k
-GA: GA_Config_2_TargetExchUnifPreferVRanking (MP-5 runs),0.08898633875210829,0.04332839580277237,61.911612796783444,0.05714285714285552,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_ranking
-GA: GA_Config_3_ShuffleWithin1PtPreferVBoltzmann (MP-5 runs),0.0936131100520787,0.032132600170602175,61.22301082611084,0.05714285714285552,mutate_shuffle_within_team_constrained,crossover_one_point_prefer_valid,selection_boltzmann
-GA: GA_Config_4_TargetExchUnifPreferVTournVarK_k5 (MP-5 runs),0.05714285714285552,0.0,8.188594150543214,0.05714285714285552,mutate_targeted_player_exchange,crossover_uniform_prefer_valid,selection_tournament_variable_k

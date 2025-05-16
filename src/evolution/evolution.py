@@ -2,8 +2,8 @@ import random
 import numpy as np
 from copy import deepcopy
 
-from solution import LeagueSolution # LeagueHillClimbingSolution and LeagueSASolution are used in main_script.py directly
-from operators import (
+from src.solution.solution import LeagueSolution # LeagueHillClimbingSolution and LeagueSASolution are used in main_script.py directly
+from src.operators.operators import (
     mutate_swap_constrained,
     mutate_targeted_player_exchange,
     mutate_shuffle_within_team_constrained,

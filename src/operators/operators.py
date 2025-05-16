@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from copy import deepcopy
-from solution import LeagueSolution
+from src.solution.solution import LeagueSolution
 
 # MUTATION OPERATORS --------
 
