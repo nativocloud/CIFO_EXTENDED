@@ -181,7 +181,19 @@ def compare_all_algorithms():
     return filepath
 
 def perform_statistical_tests():
-    """Perform statistical tests to compare algorithm performance."""
+    """
+    Perform non-parametric statistical tests to compare algorithm performance.
+    
+    Following the methodology from Nature Scientific Reports:
+    https://www.nature.com/articles/s41598-024-56706-x
+    
+    1. For two models: Mann-Whitney U Test (unpaired) or Wilcoxon Test (paired)
+    2. For more than two models: Kruskal-Wallis + Dunn (unpaired) or Friedman + Nemenyi (paired)
+    """
+    print("\n--- Statistical Analysis ---")
+    print("Null Hypothesis (H₀): The performance (fitness) is the same across all algorithms")
+    print("Alternative Hypothesis (H₁): At least one algorithm performs differently")
+    
     # Prepare data for statistical tests
     algorithm_names = []
     fitness_values = []
@@ -189,8 +201,9 @@ def perform_statistical_tests():
     # Collect fitness values for each algorithm configuration
     for algo in ["HC", "SA", "GA"]:
         for i, config in enumerate(all_results[algo]["configs"]):
-            algorithm_names.append(f"{algo} - {config}")
-            fitness_values.append(all_results[algo]["fitness_values"][i])
+            if all_results[algo]["fitness_values"][i]:  # Check if we have values
+                algorithm_names.append(f"{algo} - {config}")
+                fitness_values.append(all_results[algo]["fitness_values"][i])
     
     # Convert to DataFrame for easier analysis
     results_df = pd.DataFrame({
@@ -202,41 +215,172 @@ def perform_statistical_tests():
     results_filepath = os.path.join(DATA_DIR_RESULTS, "statistical_comparison.csv")
     results_df.to_csv(results_filepath, index=False)
     
-    # Perform ANOVA if we have enough data points
-    if len(algorithm_names) >= 3:
-        try:
-            # One-way ANOVA
-            groups = [values for values in fitness_values if len(values) > 0]
-            if len(groups) >= 2 and all(len(g) > 0 for g in groups):
-                f_stat, p_value = stats.f_oneway(*groups)
+    # Count number of algorithms with valid results
+    valid_algorithms = len([values for values in fitness_values if len(values) > 0])
+    
+    if valid_algorithms < 2:
+        print("Not enough algorithms with valid results for statistical comparison.")
+        return results_filepath
+    
+    # Determine if we have paired or unpaired data
+    # Data is paired if all algorithms have the same number of runs with matching random seeds
+    is_paired = all(len(values) == len(fitness_values[0]) for values in fitness_values) and NUM_RUNS > 1
+    
+    print(f"\nData type: {'Paired' if is_paired else 'Unpaired'}")
+    print(f"Number of algorithms: {valid_algorithms}")
+    print(f"Number of runs per algorithm: {NUM_RUNS}")
+    
+    try:
+        if valid_algorithms == 2:
+            # Two algorithms comparison
+            if is_paired and NUM_RUNS > 1:
+                # Paired data: Wilcoxon signed-rank test
+                print("\nPerforming Wilcoxon signed-rank test (paired data)...")
+                stat, p_value = stats.wilcoxon(fitness_values[0], fitness_values[1])
+                test_name = "Wilcoxon signed-rank test"
+            else:
+                # Unpaired data: Mann-Whitney U test
+                print("\nPerforming Mann-Whitney U test (unpaired data)...")
+                stat, p_value = stats.mannwhitneyu(fitness_values[0], fitness_values[1], 
+                                                  alternative='two-sided')
+                test_name = "Mann-Whitney U test"
+            
+            print(f"{test_name}: statistic={stat:.4f}, p={p_value:.4f}")
+            
+            if p_value < 0.05:
+                print(f"Significant difference detected (p < 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
+                better_algo = algorithm_names[0] if np.mean(fitness_values[0]) < np.mean(fitness_values[1]) else algorithm_names[1]
+                print(f"The better performing algorithm is: {better_algo}")
+            else:
+                print(f"No significant difference (p >= 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
                 
-                print("\n--- Statistical Analysis ---")
-                print(f"One-way ANOVA: F={f_stat:.4f}, p={p_value:.4f}")
+        elif valid_algorithms > 2:
+            # Multiple algorithms comparison
+            if is_paired and NUM_RUNS > 1:
+                # Paired data: Friedman test followed by Nemenyi
+                print("\nPerforming Friedman test followed by Nemenyi post-hoc test (paired data)...")
+                
+                # Prepare data for Friedman test
+                data_array = np.array([values for values in fitness_values])
+                
+                # Friedman test
+                try:
+                    from scipy.stats import friedmanchisquare
+                    chi2, p_value = friedmanchisquare(*data_array)
+                    print(f"Friedman test: chi2={chi2:.4f}, p={p_value:.4f}")
+                    
+                    if p_value < 0.05:
+                        print("Significant difference detected (p < 0.05) among algorithms")
+                        
+                        # Nemenyi post-hoc test
+                        try:
+                            from scikit_posthocs import posthoc_nemenyi_friedman
+                            posthoc = posthoc_nemenyi_friedman(data_array.T)
+                            print("\nNemenyi post-hoc test p-values:")
+                            
+                            # Create DataFrame with algorithm names
+                            posthoc_df = pd.DataFrame(posthoc, 
+                                                     index=algorithm_names,
+                                                     columns=algorithm_names)
+                            print(posthoc_df)
+                            
+                            # Save post-hoc results
+                            posthoc_filepath = os.path.join(DATA_DIR_RESULTS, "nemenyi_posthoc.csv")
+                            posthoc_df.to_csv(posthoc_filepath)
+                            print(f"Post-hoc test results saved to {posthoc_filepath}")
+                            
+                            # Identify significant pairs
+                            significant_pairs = []
+                            for i in range(len(algorithm_names)):
+                                for j in range(i+1, len(algorithm_names)):
+                                    if posthoc[i, j] < 0.05:
+                                        better = i if np.mean(fitness_values[i]) < np.mean(fitness_values[j]) else j
+                                        worse = j if better == i else i
+                                        significant_pairs.append((algorithm_names[better], algorithm_names[worse]))
+                            
+                            if significant_pairs:
+                                print("\nSignificantly different pairs (p < 0.05):")
+                                for better, worse in significant_pairs:
+                                    print(f"  {better} performs better than {worse}")
+                            else:
+                                print("\nNo algorithm pairs show significant differences in post-hoc tests")
+                                
+                        except ImportError:
+                            print("scikit-posthocs package not available for Nemenyi test")
+                            print("Install with: pip install scikit-posthocs")
+                    else:
+                        print("No significant difference (p >= 0.05) among algorithms")
+                        
+                except ValueError as e:
+                    print(f"Error in Friedman test: {e}")
+                    print("Falling back to Kruskal-Wallis test...")
+                    # Fall back to Kruskal-Wallis
+                    is_paired = False
+            
+            if not is_paired:
+                # Unpaired data: Kruskal-Wallis test followed by Dunn's test
+                print("\nPerforming Kruskal-Wallis test followed by Dunn's post-hoc test (unpaired data)...")
+                
+                # Flatten data for Kruskal-Wallis
+                flat_data = []
+                flat_groups = []
+                for i, values in enumerate(fitness_values):
+                    flat_data.extend(values)
+                    flat_groups.extend([i] * len(values))
+                
+                # Kruskal-Wallis test
+                stat, p_value = stats.kruskal(*[values for values in fitness_values])
+                print(f"Kruskal-Wallis test: H={stat:.4f}, p={p_value:.4f}")
                 
                 if p_value < 0.05:
-                    print("There is a statistically significant difference between algorithm performances.")
-                else:
-                    print("No statistically significant difference detected between algorithm performances.")
-                
-                # If we have enough data, perform post-hoc tests
-                if len(groups) >= 3:
-                    # Flatten data for pairwise tests
-                    all_data = []
-                    group_labels = []
-                    for i, group in enumerate(groups):
-                        all_data.extend(group)
-                        group_labels.extend([algorithm_names[i]] * len(group))
+                    print("Significant difference detected (p < 0.05) among algorithms")
                     
-                    # Tukey HSD test
-                    from statsmodels.stats.multicomp import pairwise_tukeyhsd
-                    tukey_results = pairwise_tukeyhsd(all_data, group_labels, alpha=0.05)
-                    print("\nTukey HSD Post-hoc Test:")
-                    print(tukey_results)
-        except Exception as e:
-            print(f"Statistical test error: {e}")
-            print("Not enough data for statistical analysis. Run with NUM_RUNS > 1 for statistical tests.")
-    else:
-        print("\nNot enough algorithm configurations for statistical comparison.")
+                    # Dunn's post-hoc test
+                    try:
+                        from scikit_posthocs import posthoc_dunn
+                        posthoc = posthoc_dunn([values for values in fitness_values], p_adjust='bonferroni')
+                        print("\nDunn's post-hoc test p-values (Bonferroni-adjusted):")
+                        
+                        # Create DataFrame with algorithm names
+                        posthoc_df = pd.DataFrame(posthoc, 
+                                                 index=algorithm_names,
+                                                 columns=algorithm_names)
+                        print(posthoc_df)
+                        
+                        # Save post-hoc results
+                        posthoc_filepath = os.path.join(DATA_DIR_RESULTS, "dunn_posthoc.csv")
+                        posthoc_df.to_csv(posthoc_filepath)
+                        print(f"Post-hoc test results saved to {posthoc_filepath}")
+                        
+                        # Identify significant pairs
+                        significant_pairs = []
+                        for i in range(len(algorithm_names)):
+                            for j in range(i+1, len(algorithm_names)):
+                                if posthoc.iloc[i, j] < 0.05:
+                                    better = i if np.mean(fitness_values[i]) < np.mean(fitness_values[j]) else j
+                                    worse = j if better == i else i
+                                    significant_pairs.append((algorithm_names[better], algorithm_names[worse]))
+                        
+                        if significant_pairs:
+                            print("\nSignificantly different pairs (p < 0.05):")
+                            for better, worse in significant_pairs:
+                                print(f"  {better} performs better than {worse}")
+                        else:
+                            print("\nNo algorithm pairs show significant differences in post-hoc tests")
+                            
+                    except ImportError:
+                        print("scikit-posthocs package not available for Dunn's test")
+                        print("Install with: pip install scikit-posthocs")
+                else:
+                    print("No significant difference (p >= 0.05) among algorithms")
+    except Exception as e:
+        print(f"\nError during statistical testing: {e}")
+        print("For meaningful statistical analysis, increase NUM_RUNS (recommended: 30+)")
+    
+    print("\nNote: For robust statistical analysis, it's recommended to:")
+    print("1. Run each algorithm multiple times (NUM_RUNS >= 30)")
+    print("2. Use consistent random seeds across algorithms for paired tests")
+    print("3. Interpret results in context of problem domain and computational budget")
     
     return results_filepath
 
