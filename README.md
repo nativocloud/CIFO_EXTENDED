@@ -1,94 +1,104 @@
 # CIFO Extended Project - Single Processor Analysis
 
-This repository contains the code and resources for the Sports League Assignment Problem optimization using metaheuristics. This branch focuses specifically on the single processor implementation.
+## Project Overview
 
-## Project Structure
+This project implements and analyzes metaheuristic algorithms for the Sports League Assignment Problem. The goal is to allocate players into teams while minimizing the standard deviation of team skill levels, subject to constraints on team composition and budget.
+
+## Modular Structure
+
+The project has been organized with a modular structure:
 
 ```
 CIFO_EXTENDED_Project/
-├── CIFO_Problem_Statement.txt   # Problem definition
-├── data/
-│   └── players.csv              # Player data for the league assignment
-├── environment.yml              # Conda environment configuration
-├── images_sp/                   # Output directory for single processor results
-│   ├── all_algorithms_summary_sp.csv       # Summary of all algorithm results
-│   ├── hc_convergence_sp.png               # Hill Climbing convergence plot
-│   ├── sa_convergence_sp.png               # Simulated Annealing convergence plot
-│   └── ga_convergence_sp_*.png             # GA convergence plots for different configurations
-├── notebooks/
-│   ├── 01_single_processor_analysis.ipynb  # Jupyter notebook for analysis
-│   ├── 01_single_processor_analysis.py     # Python script paired with notebook
-│   └── set_jupytext_pairing_01.py          # Script to set up Jupytext pairing
-├── setup.sh                     # Setup script for environment
-└── src/                         # Source code modules
-    ├── __init__.py
-    ├── evolution/               # Evolutionary algorithms implementation
-    │   ├── __init__.py
-    │   └── evolution.py         # Hill Climbing, Simulated Annealing, and GA implementations
-    ├── operators/               # Genetic operators
-    │   ├── __init__.py
-    │   └── operators.py         # Mutation, crossover, and selection operators
-    └── solution/                # Problem representation
-        ├── __init__.py
-        └── solution.py          # League solution classes and fitness evaluation
+├── data/                          # Input data
+│   └── players.csv                # Player information
+├── results/                       # Results organized by phase
+│   └── phase_1_sp/                # Single processor results
+│       ├── images/                # Generated plots
+│       └── data/                  # Generated data files
+├── notebooks/                     # Jupyter notebooks
+│   └── phase_1_sp/                # Single processor notebooks
+│       ├── 01_single_processor_analysis.ipynb
+│       └── 01_single_processor_analysis.py
+│   └── utils/                     # Utility scripts
+│       └── set_jupytext_pairing_01.py
+├── src/                           # Source code
+│   ├── evolution/                 # Evolution algorithms
+│   ├── operators/                 # Genetic operators
+│   └── solution/                  # Solution representations
+├── environment.yml                # Conda environment specification
+└── setup.sh                       # Environment setup script
 ```
 
-## Problem Overview
+## Features
 
-The Sports League Assignment Problem involves allocating 35 players into 5 teams while satisfying constraints:
-- Each team must have exactly 7 players
-- Each team must follow a specific positional structure (1 GK, 2 DEF, 2 MID, 2 FWD)
-- Each team's total cost must not exceed 750 million €
-- Each player must be assigned to exactly one team
+The implementation includes:
 
-The objective is to minimize the standard deviation of average skill ratings across teams.
+1. **Multiple Algorithms**:
+   - Hill Climbing
+   - Simulated Annealing
+   - Genetic Algorithm with multiple configurations
 
-## Algorithms Implemented
+2. **Modular Execution**:
+   - Each algorithm can be executed independently
+   - All algorithms can be executed in sequence
+   - Comparative analysis between algorithms
 
-1. **Hill Climbing**: A local search algorithm that iteratively moves to neighboring solutions with better fitness.
-2. **Simulated Annealing**: A probabilistic technique that occasionally accepts worse solutions to escape local optima.
-3. **Genetic Algorithm**: A population-based approach with multiple configurations testing different:
-   - Mutation operators (swap, targeted exchange, shuffle)
-   - Crossover operators (one-point, uniform)
-   - Selection mechanisms (tournament, ranking, Boltzmann)
-   - Population sizes and generation counts
+3. **Visualization**:
+   - Convergence plots for each algorithm
+   - Comparative plots between configurations
+   - Cross-algorithm performance comparison
+
+4. **Statistical Analysis**:
+   - Performance metrics (mean, standard deviation)
+   - Statistical significance tests (ANOVA, t-tests)
+   - Post-hoc analysis (Tukey HSD)
 
 ## Setup and Execution
 
 ### Environment Setup
 
-```bash
-# Create and activate conda environment
-conda env create -f environment.yml
-conda activate cifo-extended
+1. Create and activate the conda environment:
+   ```bash
+   conda env create -f environment.yml
+   conda activate cifo_extended
+   ```
 
-# Alternative setup using the provided script
-bash setup.sh
-```
+2. Run the setup script:
+   ```bash
+   ./setup.sh
+   ```
 
 ### Running the Analysis
 
-The analysis can be run either through the Jupyter notebook or directly using the Python script:
+The notebook `notebooks/phase_1_sp/01_single_processor_analysis.ipynb` provides a modular interface for running the algorithms:
 
-```bash
-# Run via Python script
-python -m notebooks.01_single_processor_analysis
+1. **Independent Algorithm Execution**:
+   - Run the Hill Climbing cell to execute only Hill Climbing
+   - Run the Simulated Annealing cell to execute only Simulated Annealing
+   - Run the Genetic Algorithm cell to execute only Genetic Algorithm
 
-# Or open and run the notebook
-jupyter notebook notebooks/01_single_processor_analysis.ipynb
-```
+2. **Comparative Analysis**:
+   - After each algorithm section, run the comparison cell to visualize different configurations
+   - At the end, run the cross-algorithm comparison cell to compare all algorithms
 
-## Implementation Details
+3. **Full Execution**:
+   - Run the main execution cell to execute all algorithms in sequence
+   - Control which algorithms to run using parameters:
+     ```python
+     main(run_hc=True, run_sa=True, run_ga=True, num_runs=NUM_RUNS)
+     ```
 
-- **Vectorized Operations**: The solution uses NumPy for vectorized operations to improve performance
-- **Cross-Platform Compatibility**: All file paths use relative paths with `os.path.join()` for Windows/Linux compatibility
-- **Jupytext Pairing**: The notebook is paired with a Python script for version control and reproducibility
+## Dependencies
 
-## Results
+- Python 3.11+
+- NumPy, Pandas, Matplotlib
+- SciPy (for statistical tests)
+- StatsModels (for post-hoc analysis)
 
-The analysis generates several outputs in the `images_sp/` directory:
-- Convergence plots for each algorithm
-- CSV summary of performance metrics (fitness values, execution times)
-- Comparative analysis across all implemented algorithms
+## Additional Notes
 
-The single processor analysis serves as a baseline for comparison with multi-processor implementations.
+- The notebook is paired with a Python script using Jupytext for version control
+- All paths are relative and cross-platform compatible
+- Results are organized by phase for easy comparison
+- Statistical tests require multiple runs (NUM_RUNS > 1) for meaningful results
