@@ -30,6 +30,8 @@ import time
 import os
 import sys
 import scipy.stats as stats
+import random
+from collections import defaultdict
 
 # Add src directory to path for imports using relative path
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))
@@ -86,17 +88,113 @@ MAX_BUDGET = 750
 # Define number of runs for stochastic algorithms
 NUM_RUNS = 1  # Default value, can be changed
 
+# Define random seeds for reproducibility
+USE_FIXED_SEEDS = True  # Set to True for paired statistical tests
+RANDOM_SEEDS = [42 + i for i in range(100)]  # Pre-generate 100 seeds
+
 # Dictionary to store all results for comparison
 all_results = {
-    "HC": {"configs": [], "fitness_values": [], "exec_times": [], "histories": []},
-    "SA": {"configs": [], "fitness_values": [], "exec_times": [], "histories": []},
-    "GA": {"configs": [], "fitness_values": [], "exec_times": [], "histories": []}
+    "HC": {
+        "configs": [], 
+        "fitness_values": [], 
+        "exec_times": [], 
+        "histories": [],
+        "best_fitness": [],
+        "avg_fitness": [],
+        "std_dev": [],
+        "convergence_speed": [],
+        "success_rate": [],
+        "fitness_over_time": []
+    },
+    "SA": {
+        "configs": [], 
+        "fitness_values": [], 
+        "exec_times": [], 
+        "histories": [],
+        "best_fitness": [],
+        "avg_fitness": [],
+        "std_dev": [],
+        "convergence_speed": [],
+        "success_rate": [],
+        "fitness_over_time": []
+    },
+    "GA": {
+        "configs": [], 
+        "fitness_values": [], 
+        "exec_times": [], 
+        "histories": [],
+        "best_fitness": [],
+        "avg_fitness": [],
+        "std_dev": [],
+        "convergence_speed": [],
+        "success_rate": [],
+        "fitness_over_time": []
+    }
 }
 
 # %% [markdown]
 # ## Utility Functions
 
 # %%
+def calculate_convergence_speed(history, threshold=0.95):
+    """
+    Calculate convergence speed as the number of iterations needed to reach
+    threshold% of the final improvement.
+    
+    Args:
+        history: List of fitness values over iterations
+        threshold: Percentage of final improvement to consider as converged (0.0-1.0)
+        
+    Returns:
+        iterations: Number of iterations to reach threshold% improvement
+        normalized_speed: Speed normalized to 0-1 range (1 = fastest)
+    """
+    if not history or len(history) < 2:
+        return float('nan'), float('nan')
+    
+    initial_fitness = history[0]
+    final_fitness = history[-1]
+    total_improvement = initial_fitness - final_fitness
+    
+    if total_improvement <= 0:
+        return float('nan'), float('nan')  # No improvement
+    
+    target_improvement = total_improvement * threshold
+    target_fitness = initial_fitness - target_improvement
+    
+    for i, fitness in enumerate(history):
+        if fitness <= target_fitness:
+            return i, 1.0 - (i / len(history))
+    
+    return len(history), 0.0  # Did not converge within given iterations
+
+def calculate_success_rate(fitness_values, threshold=None):
+    """
+    Calculate success rate as percentage of runs that found valid solutions.
+    If threshold is provided, only solutions with fitness better than threshold
+    are considered successful.
+    
+    Args:
+        fitness_values: List of fitness values from multiple runs
+        threshold: Optional fitness threshold to consider a run successful
+        
+    Returns:
+        success_rate: Percentage of successful runs (0-100)
+    """
+    if not fitness_values:
+        return 0.0
+    
+    # Filter out NaN values (invalid solutions)
+    valid_values = [v for v in fitness_values if not np.isnan(v)]
+    
+    # If threshold is provided, count solutions better than threshold
+    if threshold is not None:
+        successful_runs = sum(1 for v in valid_values if v <= threshold)
+    else:
+        successful_runs = len(valid_values)
+    
+    return (successful_runs / len(fitness_values)) * 100.0
+
 def print_algorithm_results(algo_name, config_name, mean_fitness, std_fitness, mean_exec_time, best_fitness):
     """Print formatted results for an algorithm run."""
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {algo_name} {config_name} ({NUM_RUNS} runs) processing finished.")
@@ -143,140 +241,370 @@ def compare_convergence_plots(histories_dict, algo_name, xlabel="Iteration"):
     
     return filepath
 
-def compare_all_algorithms():
-    """Create and save a comparative plot of all algorithms."""
-    plt.figure(figsize=(14, 10))
+def visualize_statistical_comparison(metrics_data=None):
+    """
+    Create visualizations comparing algorithm performance across different metrics.
     
-    # Plot HC results
-    for i, config in enumerate(all_results["HC"]["configs"]):
-        plt.plot(all_results["HC"]["histories"][i], 
-                 label=f"HC - {config}", 
-                 linestyle="-")
+    Args:
+        metrics_data: Dictionary with metrics to visualize. If None, uses all_results
     
-    # Plot SA results
-    for i, config in enumerate(all_results["SA"]["configs"]):
-        plt.plot(all_results["SA"]["histories"][i][:100:10],  # Sample points to avoid overcrowding
-                 label=f"SA - {config}", 
-                 linestyle="--")
+    Returns:
+        List of saved visualization filepaths
+    """
+    if metrics_data is None:
+        metrics_data = all_results
     
-    # Plot GA results
-    for i, config in enumerate(all_results["GA"]["configs"]):
-        plt.plot(all_results["GA"]["histories"][i], 
-                 label=f"GA - {config}", 
-                 linestyle="-.")
+    print("\n--- Creating Statistical Comparison Visualizations ---")
     
-    plt.title(f"All Algorithms Convergence Comparison - Best of {NUM_RUNS} Runs")
-    plt.xlabel("Iteration (Normalized)")
-    plt.ylabel("Fitness (Std Dev of Avg Team Skills)")
-    plt.grid(True)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.tight_layout()
+    # Metrics to visualize
+    metrics = [
+        {"name": "Best Fitness", "key": "best_fitness", "lower_is_better": True, "ylabel": "Best Fitness Value"},
+        {"name": "Average Fitness", "key": "avg_fitness", "lower_is_better": True, "ylabel": "Average Fitness"},
+        {"name": "Standard Deviation", "key": "std_dev", "lower_is_better": True, "ylabel": "Standard Deviation"},
+        {"name": "Convergence Speed", "key": "convergence_speed", "lower_is_better": False, "ylabel": "Convergence Speed"},
+        {"name": "Execution Time", "key": "exec_times", "lower_is_better": True, "ylabel": "Execution Time (s)"},
+        {"name": "Success Rate", "key": "success_rate", "lower_is_better": False, "ylabel": "Success Rate (%)"}
+    ]
     
-    filename = "all_algorithms_comparison.png"
-    filepath = os.path.join(IMAGES_DIR, filename)
-    plt.savefig(filepath)
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Saved all algorithms comparison plot to {filepath}")
-    plt.close()
+    saved_filepaths = []
     
-    return filepath
+    # Create boxplots for each metric
+    for metric in metrics:
+        metric_name = metric["name"]
+        metric_key = metric["key"]
+        ylabel = metric["ylabel"]
+        
+        # Prepare data for visualization
+        algorithm_names = []
+        metric_values = []
+        
+        # Collect values for each algorithm configuration
+        for algo in ["HC", "SA", "GA"]:
+            for i, config in enumerate(metrics_data[algo]["configs"]):
+                if metric_key in metrics_data[algo] and i < len(metrics_data[algo][metric_key]):
+                    values = metrics_data[algo][metric_key][i]
+                    if values and len(values) > 0:  # Check if we have values
+                        algorithm_names.append(f"{algo} - {config}")
+                        metric_values.append(values)
+        
+        if not algorithm_names or not metric_values:
+            print(f"No data available for {metric_name} visualization")
+            continue
+        
+        # Create boxplot
+        plt.figure(figsize=(12, 8))
+        
+        # Create boxplot with individual points
+        boxplot = plt.boxplot(metric_values, labels=algorithm_names, patch_artist=True)
+        
+        # Add individual data points with jitter
+        for i, data in enumerate(metric_values):
+            # Add jitter to x position
+            x = np.random.normal(i+1, 0.04, size=len(data))
+            plt.scatter(x, data, alpha=0.5, s=30)
+        
+        # Customize boxplot colors
+        colors = ['lightblue', 'lightgreen', 'lightcoral', 'lightsalmon', 'lightsteelblue', 'lightpink']
+        for i, box in enumerate(boxplot['boxes']):
+            box.set(facecolor=colors[i % len(colors)])
+        
+        plt.title(f"{metric_name} Comparison Across Algorithms")
+        plt.ylabel(ylabel)
+        plt.xticks(rotation=45, ha='right')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.tight_layout()
+        
+        # Save figure
+        filepath = os.path.join(IMAGES_DIR, f"{metric_key}_comparison.png")
+        plt.savefig(filepath)
+        print(f"Saved {metric_name} comparison visualization to {filepath}")
+        plt.close()
+        
+        saved_filepaths.append(filepath)
+    
+    # Create fitness over time curve comparison
+    if "fitness_over_time" in metrics_data["HC"] or "fitness_over_time" in metrics_data["SA"] or "fitness_over_time" in metrics_data["GA"]:
+        plt.figure(figsize=(14, 10))
+        
+        # Collect fitness over time curves
+        for algo in ["HC", "SA", "GA"]:
+            for i, config in enumerate(metrics_data[algo]["configs"]):
+                if "fitness_over_time" in metrics_data[algo] and i < len(metrics_data[algo]["fitness_over_time"]):
+                    curves = metrics_data[algo]["fitness_over_time"][i]
+                    if curves and len(curves) > 0:
+                        # Average the curves if we have multiple runs
+                        avg_curve = np.mean(curves, axis=0)
+                        # Normalize x-axis to percentage of iterations
+                        x = np.linspace(0, 100, len(avg_curve))
+                        plt.plot(x, avg_curve, label=f"{algo} - {config}")
+        
+        plt.title("Fitness Over Time Comparison")
+        plt.xlabel("Percentage of Iterations")
+        plt.ylabel("Fitness Value")
+        plt.grid(True)
+        plt.legend()
+        
+        # Save figure
+        filepath = os.path.join(IMAGES_DIR, "fitness_over_time_comparison.png")
+        plt.savefig(filepath)
+        print(f"Saved Fitness Over Time comparison visualization to {filepath}")
+        plt.close()
+        
+        saved_filepaths.append(filepath)
+    
+    # Create summary table
+    summary_data = []
+    for algo in ["HC", "SA", "GA"]:
+        for i, config in enumerate(metrics_data[algo]["configs"]):
+            row = {"Algorithm": f"{algo} - {config}"}
+            
+            for metric in metrics:
+                metric_key = metric["key"]
+                if metric_key in metrics_data[algo] and i < len(metrics_data[algo][metric_key]):
+                    values = metrics_data[algo][metric_key][i]
+                    if values and len(values) > 0:
+                        row[metric["name"]] = np.mean(values)
+                    else:
+                        row[metric["name"]] = float('nan')
+                else:
+                    row[metric["name"]] = float('nan')
+            
+            summary_data.append(row)
+    
+    if summary_data:
+        summary_df = pd.DataFrame(summary_data)
+        
+        # Save summary table
+        filepath = os.path.join(DATA_DIR_RESULTS, "metrics_summary.csv")
+        summary_df.to_csv(filepath, index=False)
+        print(f"Saved metrics summary table to {filepath}")
+        
+        saved_filepaths.append(filepath)
+    
+    return saved_filepaths
 
-def perform_statistical_tests():
+def perform_statistical_tests(metrics_data=None, paired_test=True):
     """
     Perform non-parametric statistical tests to compare algorithm performance.
     
     Following the methodology from Nature Scientific Reports:
     https://www.nature.com/articles/s41598-024-56706-x
     
-    1. For two models: Mann-Whitney U Test (unpaired) or Wilcoxon Test (paired)
-    2. For more than two models: Kruskal-Wallis + Dunn (unpaired) or Friedman + Nemenyi (paired)
+    Args:
+        metrics_data: Dictionary with metrics to analyze. If None, uses all_results
+        paired_test: Whether to use paired tests (True) or unpaired tests (False)
+    
+    Returns:
+        results_dict: Dictionary with test results for each metric
     """
-    print("\n--- Statistical Analysis ---")
-    print("Null Hypothesis (H₀): The performance (fitness) is the same across all algorithms")
+    if metrics_data is None:
+        metrics_data = all_results
+    
+    print(f"\n--- Statistical Analysis ({'Paired' if paired_test else 'Unpaired'} Tests) ---")
+    print("Null Hypothesis (H₀): The performance metrics are the same across all algorithms")
     print("Alternative Hypothesis (H₁): At least one algorithm performs differently")
     
-    # Prepare data for statistical tests
-    algorithm_names = []
-    fitness_values = []
+    # Metrics to analyze
+    metrics = [
+        {"name": "Best Fitness", "key": "best_fitness", "lower_is_better": True},
+        {"name": "Average Fitness", "key": "avg_fitness", "lower_is_better": True},
+        {"name": "Standard Deviation", "key": "std_dev", "lower_is_better": True},
+        {"name": "Convergence Speed", "key": "convergence_speed", "lower_is_better": False},
+        {"name": "Execution Time", "key": "exec_times", "lower_is_better": True},
+        {"name": "Success Rate", "key": "success_rate", "lower_is_better": False}
+    ]
     
-    # Collect fitness values for each algorithm configuration
-    for algo in ["HC", "SA", "GA"]:
-        for i, config in enumerate(all_results[algo]["configs"]):
-            if all_results[algo]["fitness_values"][i]:  # Check if we have values
-                algorithm_names.append(f"{algo} - {config}")
-                fitness_values.append(all_results[algo]["fitness_values"][i])
+    results_dict = {}
     
-    # Convert to DataFrame for easier analysis
-    results_df = pd.DataFrame({
-        'Algorithm': algorithm_names,
-        'Fitness': fitness_values
-    })
-    
-    # Save results to CSV
-    results_filepath = os.path.join(DATA_DIR_RESULTS, "statistical_comparison.csv")
-    results_df.to_csv(results_filepath, index=False)
-    
-    # Count number of algorithms with valid results
-    valid_algorithms = len([values for values in fitness_values if len(values) > 0])
-    
-    if valid_algorithms < 2:
-        print("Not enough algorithms with valid results for statistical comparison.")
-        return results_filepath
-    
-    # Determine if we have paired or unpaired data
-    # Data is paired if all algorithms have the same number of runs with matching random seeds
-    is_paired = all(len(values) == len(fitness_values[0]) for values in fitness_values) and NUM_RUNS > 1
-    
-    print(f"\nData type: {'Paired' if is_paired else 'Unpaired'}")
-    print(f"Number of algorithms: {valid_algorithms}")
-    print(f"Number of runs per algorithm: {NUM_RUNS}")
-    
-    try:
-        if valid_algorithms == 2:
-            # Two algorithms comparison
-            if is_paired and NUM_RUNS > 1:
-                # Paired data: Wilcoxon signed-rank test
-                print("\nPerforming Wilcoxon signed-rank test (paired data)...")
-                stat, p_value = stats.wilcoxon(fitness_values[0], fitness_values[1])
-                test_name = "Wilcoxon signed-rank test"
-            else:
-                # Unpaired data: Mann-Whitney U test
-                print("\nPerforming Mann-Whitney U test (unpaired data)...")
-                stat, p_value = stats.mannwhitneyu(fitness_values[0], fitness_values[1], 
-                                                  alternative='two-sided')
-                test_name = "Mann-Whitney U test"
-            
-            print(f"{test_name}: statistic={stat:.4f}, p={p_value:.4f}")
-            
-            if p_value < 0.05:
-                print(f"Significant difference detected (p < 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
-                better_algo = algorithm_names[0] if np.mean(fitness_values[0]) < np.mean(fitness_values[1]) else algorithm_names[1]
-                print(f"The better performing algorithm is: {better_algo}")
-            else:
-                print(f"No significant difference (p >= 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
+    for metric in metrics:
+        metric_name = metric["name"]
+        metric_key = metric["key"]
+        lower_is_better = metric["lower_is_better"]
+        
+        print(f"\n=== {metric_name} Analysis ===")
+        
+        # Prepare data for statistical tests
+        algorithm_names = []
+        metric_values = []
+        
+        # Collect values for each algorithm configuration
+        for algo in ["HC", "SA", "GA"]:
+            for i, config in enumerate(metrics_data[algo]["configs"]):
+                if metric_key in metrics_data[algo] and i < len(metrics_data[algo][metric_key]):
+                    values = metrics_data[algo][metric_key][i]
+                    if values and len(values) > 0:  # Check if we have values
+                        algorithm_names.append(f"{algo} - {config}")
+                        metric_values.append(values)
+        
+        # Count number of algorithms with valid results
+        valid_algorithms = len([values for values in metric_values if len(values) > 0])
+        
+        if valid_algorithms < 2:
+            print(f"Not enough algorithms with valid {metric_name} data for statistical comparison.")
+            results_dict[metric_name] = {"status": "insufficient_data"}
+            continue
+        
+        # Determine if we have paired or unpaired data based on parameter and data structure
+        is_paired = paired_test and all(len(values) == len(metric_values[0]) for values in metric_values) and NUM_RUNS > 1
+        
+        print(f"Data type: {'Paired' if is_paired else 'Unpaired'}")
+        print(f"Number of algorithms: {valid_algorithms}")
+        print(f"Number of runs per algorithm: {NUM_RUNS}")
+        
+        try:
+            if valid_algorithms == 2:
+                # Two algorithms comparison
+                if is_paired and NUM_RUNS > 1:
+                    # Paired data: Wilcoxon signed-rank test
+                    print("\nPerforming Wilcoxon signed-rank test (paired data)...")
+                    stat, p_value = stats.wilcoxon(metric_values[0], metric_values[1])
+                    test_name = "Wilcoxon signed-rank test"
+                else:
+                    # Unpaired data: Mann-Whitney U test
+                    print("\nPerforming Mann-Whitney U test (unpaired data)...")
+                    stat, p_value = stats.mannwhitneyu(metric_values[0], metric_values[1], 
+                                                      alternative='two-sided')
+                    test_name = "Mann-Whitney U test"
                 
-        elif valid_algorithms > 2:
-            # Multiple algorithms comparison
-            if is_paired and NUM_RUNS > 1:
-                # Paired data: Friedman test followed by Nemenyi
-                print("\nPerforming Friedman test followed by Nemenyi post-hoc test (paired data)...")
+                print(f"{test_name}: statistic={stat:.4f}, p={p_value:.4f}")
                 
-                # Prepare data for Friedman test
-                data_array = np.array([values for values in fitness_values])
+                if p_value < 0.05:
+                    print(f"Significant difference detected (p < 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
+                    
+                    # Determine which algorithm is better based on metric
+                    if lower_is_better:
+                        better_idx = 0 if np.mean(metric_values[0]) < np.mean(metric_values[1]) else 1
+                    else:
+                        better_idx = 0 if np.mean(metric_values[0]) > np.mean(metric_values[1]) else 1
+                        
+                    better_algo = algorithm_names[better_idx]
+                    print(f"The better performing algorithm is: {better_algo}")
+                    
+                    results_dict[metric_name] = {
+                        "test": test_name,
+                        "statistic": float(stat),
+                        "p_value": float(p_value),
+                        "significant": True,
+                        "better_algorithm": better_algo,
+                        "algorithms": algorithm_names
+                    }
+                else:
+                    print(f"No significant difference (p >= 0.05) between {algorithm_names[0]} and {algorithm_names[1]}")
+                    results_dict[metric_name] = {
+                        "test": test_name,
+                        "statistic": float(stat),
+                        "p_value": float(p_value),
+                        "significant": False,
+                        "algorithms": algorithm_names
+                    }
+                    
+            elif valid_algorithms > 2:
+                # Multiple algorithms comparison
+                if is_paired and NUM_RUNS > 1:
+                    # Paired data: Friedman test followed by Nemenyi
+                    print("\nPerforming Friedman test followed by Nemenyi post-hoc test (paired data)...")
+                    
+                    # Prepare data for Friedman test
+                    data_array = np.array([values for values in metric_values])
+                    
+                    # Friedman test
+                    try:
+                        from scipy.stats import friedmanchisquare
+                        chi2, p_value = friedmanchisquare(*data_array)
+                        print(f"Friedman test: chi2={chi2:.4f}, p={p_value:.4f}")
+                        
+                        results_dict[metric_name] = {
+                            "test": "Friedman test",
+                            "statistic": float(chi2),
+                            "p_value": float(p_value),
+                            "significant": p_value < 0.05,
+                            "algorithms": algorithm_names,
+                            "post_hoc": {}
+                        }
+                        
+                        if p_value < 0.05:
+                            print("Significant difference detected (p < 0.05) among algorithms")
+                            
+                            # Nemenyi post-hoc test
+                            try:
+                                from scikit_posthocs import posthoc_nemenyi_friedman
+                                posthoc = posthoc_nemenyi_friedman(data_array.T)
+                                print("\nNemenyi post-hoc test p-values:")
+                                
+                                # Create DataFrame with algorithm names
+                                posthoc_df = pd.DataFrame(posthoc, 
+                                                         index=algorithm_names,
+                                                         columns=algorithm_names)
+                                print(posthoc_df)
+                                
+                                # Save post-hoc results
+                                posthoc_filepath = os.path.join(DATA_DIR_RESULTS, f"nemenyi_posthoc_{metric_key}.csv")
+                                posthoc_df.to_csv(posthoc_filepath)
+                                print(f"Post-hoc test results saved to {posthoc_filepath}")
+                                
+                                # Identify significant pairs
+                                significant_pairs = []
+                                for i in range(len(algorithm_names)):
+                                    for j in range(i+1, len(algorithm_names)):
+                                        if posthoc[i, j] < 0.05:
+                                            if lower_is_better:
+                                                better = i if np.mean(metric_values[i]) < np.mean(metric_values[j]) else j
+                                            else:
+                                                better = i if np.mean(metric_values[i]) > np.mean(metric_values[j]) else j
+                                                
+                                            worse = j if better == i else i
+                                            significant_pairs.append((algorithm_names[better], algorithm_names[worse]))
+                                
+                                results_dict[metric_name]["post_hoc"] = {
+                                    "test": "Nemenyi test",
+                                    "p_values": posthoc.tolist(),
+                                    "significant_pairs": significant_pairs
+                                }
+                                
+                                if significant_pairs:
+                                    print("\nSignificantly different pairs (p < 0.05):")
+                                    for better, worse in significant_pairs:
+                                        print(f"  {better} performs better than {worse}")
+                                else:
+                                    print("\nNo algorithm pairs show significant differences in post-hoc tests")
+                                    
+                            except ImportError:
+                                print("scikit-posthocs package not available for Nemenyi test")
+                                print("Install with: pip install scikit-posthocs")
+                        else:
+                            print("No significant difference (p >= 0.05) among algorithms")
+                            
+                    except ValueError as e:
+                        print(f"Error in Friedman test: {e}")
+                        print("Falling back to Kruskal-Wallis test...")
+                        # Fall back to Kruskal-Wallis
+                        is_paired = False
                 
-                # Friedman test
-                try:
-                    from scipy.stats import friedmanchisquare
-                    chi2, p_value = friedmanchisquare(*data_array)
-                    print(f"Friedman test: chi2={chi2:.4f}, p={p_value:.4f}")
+                if not is_paired:
+                    # Unpaired data: Kruskal-Wallis test followed by Dunn's test
+                    print("\nPerforming Kruskal-Wallis test followed by Dunn's post-hoc test (unpaired data)...")
+                    
+                    # Kruskal-Wallis test
+                    stat, p_value = stats.kruskal(*[values for values in metric_values])
+                    print(f"Kruskal-Wallis test: H={stat:.4f}, p={p_value:.4f}")
+                    
+                    results_dict[metric_name] = {
+                        "test": "Kruskal-Wallis test",
+                        "statistic": float(stat),
+                        "p_value": float(p_value),
+                        "significant": p_value < 0.05,
+                        "algorithms": algorithm_names,
+                        "post_hoc": {}
+                    }
                     
                     if p_value < 0.05:
                         print("Significant difference detected (p < 0.05) among algorithms")
                         
-                        # Nemenyi post-hoc test
+                        # Dunn's post-hoc test
                         try:
-                            from scikit_posthocs import posthoc_nemenyi_friedman
-                            posthoc = posthoc_nemenyi_friedman(data_array.T)
-                            print("\nNemenyi post-hoc test p-values:")
+                            from scikit_posthocs import posthoc_dunn
+                            posthoc = posthoc_dunn([values for values in metric_values], p_adjust='bonferroni')
+                            print("\nDunn's post-hoc test p-values (Bonferroni-adjusted):")
                             
                             # Create DataFrame with algorithm names
                             posthoc_df = pd.DataFrame(posthoc, 
@@ -285,7 +613,7 @@ def perform_statistical_tests():
                             print(posthoc_df)
                             
                             # Save post-hoc results
-                            posthoc_filepath = os.path.join(DATA_DIR_RESULTS, "nemenyi_posthoc.csv")
+                            posthoc_filepath = os.path.join(DATA_DIR_RESULTS, f"dunn_posthoc_{metric_key}.csv")
                             posthoc_df.to_csv(posthoc_filepath)
                             print(f"Post-hoc test results saved to {posthoc_filepath}")
                             
@@ -293,10 +621,20 @@ def perform_statistical_tests():
                             significant_pairs = []
                             for i in range(len(algorithm_names)):
                                 for j in range(i+1, len(algorithm_names)):
-                                    if posthoc[i, j] < 0.05:
-                                        better = i if np.mean(fitness_values[i]) < np.mean(fitness_values[j]) else j
+                                    if posthoc.iloc[i, j] < 0.05:
+                                        if lower_is_better:
+                                            better = i if np.mean(metric_values[i]) < np.mean(metric_values[j]) else j
+                                        else:
+                                            better = i if np.mean(metric_values[i]) > np.mean(metric_values[j]) else j
+                                            
                                         worse = j if better == i else i
                                         significant_pairs.append((algorithm_names[better], algorithm_names[worse]))
+                            
+                            results_dict[metric_name]["post_hoc"] = {
+                                "test": "Dunn's test",
+                                "p_values": posthoc.values.tolist(),
+                                "significant_pairs": significant_pairs
+                            }
                             
                             if significant_pairs:
                                 print("\nSignificantly different pairs (p < 0.05):")
@@ -306,83 +644,28 @@ def perform_statistical_tests():
                                 print("\nNo algorithm pairs show significant differences in post-hoc tests")
                                 
                         except ImportError:
-                            print("scikit-posthocs package not available for Nemenyi test")
+                            print("scikit-posthocs package not available for Dunn's test")
                             print("Install with: pip install scikit-posthocs")
                     else:
                         print("No significant difference (p >= 0.05) among algorithms")
-                        
-                except ValueError as e:
-                    print(f"Error in Friedman test: {e}")
-                    print("Falling back to Kruskal-Wallis test...")
-                    # Fall back to Kruskal-Wallis
-                    is_paired = False
-            
-            if not is_paired:
-                # Unpaired data: Kruskal-Wallis test followed by Dunn's test
-                print("\nPerforming Kruskal-Wallis test followed by Dunn's post-hoc test (unpaired data)...")
-                
-                # Flatten data for Kruskal-Wallis
-                flat_data = []
-                flat_groups = []
-                for i, values in enumerate(fitness_values):
-                    flat_data.extend(values)
-                    flat_groups.extend([i] * len(values))
-                
-                # Kruskal-Wallis test
-                stat, p_value = stats.kruskal(*[values for values in fitness_values])
-                print(f"Kruskal-Wallis test: H={stat:.4f}, p={p_value:.4f}")
-                
-                if p_value < 0.05:
-                    print("Significant difference detected (p < 0.05) among algorithms")
-                    
-                    # Dunn's post-hoc test
-                    try:
-                        from scikit_posthocs import posthoc_dunn
-                        posthoc = posthoc_dunn([values for values in fitness_values], p_adjust='bonferroni')
-                        print("\nDunn's post-hoc test p-values (Bonferroni-adjusted):")
-                        
-                        # Create DataFrame with algorithm names
-                        posthoc_df = pd.DataFrame(posthoc, 
-                                                 index=algorithm_names,
-                                                 columns=algorithm_names)
-                        print(posthoc_df)
-                        
-                        # Save post-hoc results
-                        posthoc_filepath = os.path.join(DATA_DIR_RESULTS, "dunn_posthoc.csv")
-                        posthoc_df.to_csv(posthoc_filepath)
-                        print(f"Post-hoc test results saved to {posthoc_filepath}")
-                        
-                        # Identify significant pairs
-                        significant_pairs = []
-                        for i in range(len(algorithm_names)):
-                            for j in range(i+1, len(algorithm_names)):
-                                if posthoc.iloc[i, j] < 0.05:
-                                    better = i if np.mean(fitness_values[i]) < np.mean(fitness_values[j]) else j
-                                    worse = j if better == i else i
-                                    significant_pairs.append((algorithm_names[better], algorithm_names[worse]))
-                        
-                        if significant_pairs:
-                            print("\nSignificantly different pairs (p < 0.05):")
-                            for better, worse in significant_pairs:
-                                print(f"  {better} performs better than {worse}")
-                        else:
-                            print("\nNo algorithm pairs show significant differences in post-hoc tests")
-                            
-                    except ImportError:
-                        print("scikit-posthocs package not available for Dunn's test")
-                        print("Install with: pip install scikit-posthocs")
-                else:
-                    print("No significant difference (p >= 0.05) among algorithms")
-    except Exception as e:
-        print(f"\nError during statistical testing: {e}")
-        print("For meaningful statistical analysis, increase NUM_RUNS (recommended: 30+)")
+        except Exception as e:
+            print(f"\nError during statistical testing for {metric_name}: {e}")
+            print("For meaningful statistical analysis, increase NUM_RUNS (recommended: 30+)")
+            results_dict[metric_name] = {"status": "error", "message": str(e)}
     
     print("\nNote: For robust statistical analysis, it's recommended to:")
     print("1. Run each algorithm multiple times (NUM_RUNS >= 30)")
     print("2. Use consistent random seeds across algorithms for paired tests")
     print("3. Interpret results in context of problem domain and computational budget")
     
-    return results_filepath
+    # Save results to JSON
+    import json
+    results_filepath = os.path.join(DATA_DIR_RESULTS, f"statistical_comparison_{'paired' if paired_test else 'unpaired'}.json")
+    with open(results_filepath, 'w') as f:
+        json.dump(results_dict, f, indent=2)
+    print(f"\nStatistical test results saved to {results_filepath}")
+    
+    return results_dict
 
 # %% [markdown]
 # ## Hill Climbing Implementation
@@ -1127,3 +1410,85 @@ def main(run_hc=True, run_sa=True, run_ga=True, num_runs=1):
 if __name__ == "__main__" or __name__ == "builtins":  # For notebook execution
     # Set to True/False to control which algorithms to run
     main(run_hc=True, run_sa=True, run_ga=True, num_runs=NUM_RUNS)
+
+# %% [markdown]
+# ## Statistical Analysis and Visualization
+
+# %%
+def run_statistical_analysis():
+    """
+    Run both paired and unpaired statistical tests and create visualizations.
+    """
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] --- Running Statistical Analysis ---")
+    
+    # Run paired tests
+    print("\n=== PAIRED STATISTICAL TESTS ===")
+    paired_results = perform_statistical_tests(paired_test=True)
+    
+    # Run unpaired tests
+    print("\n=== UNPAIRED STATISTICAL TESTS ===")
+    unpaired_results = perform_statistical_tests(paired_test=False)
+    
+    # Create visualizations
+    print("\n=== CREATING VISUALIZATIONS ===")
+    visualization_files = visualize_statistical_comparison()
+    
+    # Create comparison table between paired and unpaired results
+    print("\n=== COMPARING PAIRED VS UNPAIRED RESULTS ===")
+    
+    comparison_data = []
+    
+    # Get all unique metrics from both result sets
+    all_metrics = set(paired_results.keys()) | set(unpaired_results.keys())
+    
+    for metric in all_metrics:
+        if metric in paired_results and metric in unpaired_results:
+            paired_test = paired_results[metric].get("test", "N/A")
+            paired_p = paired_results[metric].get("p_value", float('nan'))
+            paired_sig = paired_results[metric].get("significant", False)
+            
+            unpaired_test = unpaired_results[metric].get("test", "N/A")
+            unpaired_p = unpaired_results[metric].get("p_value", float('nan'))
+            unpaired_sig = unpaired_results[metric].get("significant", False)
+            
+            # Check if results agree or disagree
+            agreement = paired_sig == unpaired_sig
+            
+            comparison_data.append({
+                "Metric": metric,
+                "Paired Test": paired_test,
+                "Paired p-value": paired_p,
+                "Paired Significant": paired_sig,
+                "Unpaired Test": unpaired_test,
+                "Unpaired p-value": unpaired_p,
+                "Unpaired Significant": unpaired_sig,
+                "Agreement": agreement
+            })
+    
+    if comparison_data:
+        comparison_df = pd.DataFrame(comparison_data)
+        
+        # Save comparison table
+        comparison_filepath = os.path.join(DATA_DIR_RESULTS, "paired_vs_unpaired_comparison.csv")
+        comparison_df.to_csv(comparison_filepath, index=False)
+        print(f"Saved paired vs unpaired comparison to {comparison_filepath}")
+        
+        # Print summary
+        print("\nSummary of paired vs unpaired test agreement:")
+        agreement_count = sum(1 for row in comparison_data if row["Agreement"])
+        print(f"Agreement rate: {agreement_count}/{len(comparison_data)} metrics ({agreement_count/len(comparison_data)*100:.1f}%)")
+        
+        # List disagreements
+        disagreements = [row["Metric"] for row in comparison_data if not row["Agreement"]]
+        if disagreements:
+            print(f"Metrics with disagreement between paired and unpaired tests: {', '.join(disagreements)}")
+        else:
+            print("All metrics show agreement between paired and unpaired tests.")
+    
+    print(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Statistical analysis completed.")
+    
+    return {
+        "paired_results": paired_results,
+        "unpaired_results": unpaired_results,
+        "visualization_files": visualization_files
+    }
