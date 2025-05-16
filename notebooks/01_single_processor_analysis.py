@@ -47,10 +47,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import os # Added for path joining
+import sys
 
-from solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
-from evolution import genetic_algorithm, hill_climbing, simulated_annealing 
-from operators import (
+# Add src directory to path for imports using relative path
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))
+
+from src.solution.solution import LeagueSolution, LeagueHillClimbingSolution, LeagueSASolution
+from src.evolution.evolution import genetic_algorithm, hill_climbing, simulated_annealing 
+from src.operators.operators import (
     # Base Mutations
     mutate_swap,
     mutate_team_shift,
@@ -71,15 +75,16 @@ from operators import (
     selection_boltzmann
 )
 
-# Define the directory for saving graphs and results
-IMAGES_SP_DIR = "/home/ubuntu/CIFO_EXTENDED_Project/images_sp" # Updated directory
+# Define the directory for saving graphs and results using relative path
+IMAGES_SP_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "images_sp")
 # Ensure the directory exists
 if not os.path.exists(IMAGES_SP_DIR):
     os.makedirs(IMAGES_SP_DIR)
     print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Created directory: {IMAGES_SP_DIR}")
 
-# Load player data
-players_df = pd.read_csv("players.csv", sep=";")
+# Load player data using relative path
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+players_df = pd.read_csv(os.path.join(DATA_DIR, "players.csv"), sep=";")
 players_data = players_df.to_dict(orient="records") # Renamed to players_data for clarity
 
 # %% [markdown]
