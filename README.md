@@ -1,76 +1,95 @@
 # CIFO Extended Project
 
 ## Overview
-This project implements and analyzes optimization algorithms (Hill Climbing, Simulated Annealing, and Genetic Algorithms) for solving a team formation problem in sports leagues.
+This repository contains the implementation of optimization algorithms for the Sports League Assignment Problem, with both single-processor and multi-processor analysis capabilities.
 
 ## Project Structure
 ```
 CIFO_EXTENDED_Project/
-├── data/                       # Input data
+├── data/                       # Data files
 │   └── players.csv             # Player data with skills and costs
 ├── notebooks/                  # Jupyter notebooks
 │   ├── phase_1_sp/             # Single processor analysis
 │   │   ├── 01_single_processor_analysis.ipynb
 │   │   └── 01_single_processor_analysis.py
 │   └── utils/                  # Utility scripts
-│       └── set_jupytext_pairing.py
-├── results/                    # Results organized by phase
+│       ├── init_notebook.py    # Notebook initialization
+│       ├── pair_notebooks.py   # Notebook-script pairing
+│       └── setup_notebooks.py  # Project kernel setup
+├── results/                    # Results directory
 │   └── phase_1_sp/             # Single processor results
-│       ├── data/               # CSV and numerical results
-│       └── images/             # Plots and visualizations
+│       ├── images/             # Generated plots
+│       └── data/               # Generated data files
 ├── src/                        # Source code
-│   ├── evolution/              # Evolution algorithms
+│   ├── evolution/              # Evolutionary algorithms
 │   ├── operators/              # Genetic operators
-│   └── solution/               # Solution representation
+│   └── solution/               # Problem-specific solution
 ├── docs/                       # Documentation
-│   └── statistical_analysis_guide.md
-├── environment.yml             # Conda environment specification
-└── setup.sh                    # Environment setup script
+│   ├── kernel_management_guide.md  # Kernel setup guide
+│   └── notebook_pairing_guide.md   # Notebook pairing guide
+├── environment.yml             # Conda environment file
+└── setup.sh                    # Setup script
 ```
 
-## Setup and Installation
-1. Clone the repository
-2. Create and activate the conda environment:
-   ```
-   conda env create -f environment.yml
-   conda activate cifo_extended
-   ```
-3. Run the setup script:
-   ```
-   bash setup.sh
-   ```
+## Setup Instructions
 
-## Jupytext Pairing
-This project uses Jupytext to pair Jupyter notebooks with Python scripts for version control. To set up the pairing:
-
-```
-python -m notebooks.utils.set_jupytext_pairing
+### Environment Setup
+1. Create and activate the conda environment:
+```bash
+conda env create -f environment.yml
+conda activate cifo_extended
 ```
 
-This script automatically detects notebooks and configures Jupytext pairing, working in any environment regardless of directory structure.
-
-## Running the Analysis
-To run the single processor analysis:
-
-```
-cd CIFO_EXTENDED_Project
-python -m notebooks.phase_1_sp.01_single_processor_analysis
+2. Run the setup script:
+```bash
+bash setup.sh
 ```
 
-Or open the notebook in Jupyter:
+### Jupyter Notebook Setup
+For consistent notebook execution across environments:
+
+1. Set up the project kernel and Jupytext pairing:
+```bash
+python -m notebooks.utils.setup_notebooks
 ```
-jupyter notebook notebooks/phase_1_sp/01_single_processor_analysis.ipynb
+
+2. Pair all notebooks with Python scripts:
+```bash
+python -m notebooks.utils.pair_notebooks --all
 ```
 
-## Statistical Analysis
-The project implements comprehensive statistical analysis including:
-- Paired and unpaired non-parametric tests
-- Visualization of algorithm performance
-- Comparison across multiple metrics
+3. When opening notebooks, select the "CIFO Project Kernel"
 
-See `docs/statistical_analysis_guide.md` for details on the statistical methodology.
+### Running the Analysis
+1. Navigate to the notebooks directory:
+```bash
+cd notebooks/phase_1_sp
+```
 
-## Metrics Analyzed
+2. Open the Jupyter notebook:
+```bash
+jupyter notebook 01_single_processor_analysis.ipynb
+```
+
+3. Make sure to run the initialization cell at the beginning:
+```python
+# Initialize notebook environment
+%run ../utils/init_notebook.py
+```
+
+## Documentation
+
+### Guides
+- [Kernel Management Guide](docs/kernel_management_guide.md): How to set up and use the project kernel
+- [Notebook Pairing Guide](docs/notebook_pairing_guide.md): How to maintain notebook-script synchronization
+
+### Statistical Analysis
+The project implements both parametric and non-parametric statistical tests to compare algorithm performance:
+- For two algorithms: Wilcoxon (paired) and Mann-Whitney U (unpaired) tests
+- For multiple algorithms: Friedman+Nemenyi (paired) and Kruskal-Wallis+Dunn (unpaired) tests
+
+### Metrics
+The following metrics are analyzed:
 - Best Fitness Value
 - Average Fitness
 - Standard Deviation
@@ -78,3 +97,11 @@ See `docs/statistical_analysis_guide.md` for details on the statistical methodol
 - Execution Time
 - Success Rate
 - Fitness Over Time Curve
+
+## Development Workflow
+This project uses Jupytext to pair notebooks with Python scripts for better version control:
+
+1. Edit either the notebook (.ipynb) or the Python script (.py)
+2. Changes are automatically synchronized between the paired files
+3. Commit the Python scripts to version control
+4. The .gitignore is configured to handle temporary files and outputs

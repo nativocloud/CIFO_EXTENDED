@@ -1,10 +1,61 @@
+# Python bytecode and cache
 __pycache__/
-*.pyc
-.DS_Store
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
 .ipynb_checkpoints/
+.jupyter/
+
+# Virtual environments
 venv/
-*.env
+env/
+ENV/
+.venv/
+.env/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs and temporary files
 *.log
 *.tmp
-*.swp
+*.bak
 
+# Local configuration
+.env
+.local/
+
+# Results and outputs
+results/*/images/*.png
+results/*/data/*.csv
+!results/.gitkeep
+!results/*/.gitkeep
+
+# Jupytext pairing
+# Uncomment the following line if you don't want to track .py files paired with notebooks
+# notebooks/**/*.py
+
+# Kernel specs
+.ipython/
+kernel-*.json
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
