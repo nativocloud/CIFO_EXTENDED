@@ -1,32 +1,29 @@
 # Development dependencies for CIFO_EXTENDED project
 # Install with: pip install -r requirements-dev.txt
 
-# Notebook pairing and kernel management
-jupytext>=1.14.0
-ipykernel>=6.0.0
-
-# Development tools
-pre-commit>=2.20.0
-black>=22.0.0
-flake8>=5.0.0
-isort>=5.10.0
+# Code formatting and linting
+black==24.3.0
+isort==5.13.2
+flake8==7.0.0
+flake8-bugbear==24.2.6
+flake8-comprehensions==3.14.0
 
 # Testing
-pytest>=7.0.0
-pytest-cov>=3.0.0
+pytest==8.0.0
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+
+# Type checking
+mypy==1.8.0
+types-python-dateutil==2.8.19.20240106
 
 # Documentation
-sphinx>=5.0.0
-sphinx-rtd-theme>=1.0.0
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
 
-# Jupyter extensions
-jupyter-contrib-nbextensions>=0.5.0
-jupyter-nbextensions-configurator>=0.5.0
+# Jupyter
+jupyter==1.0.0
+jupytext==1.15.2
 
-# Version control integration
-nbdime>=3.1.0
-
-# Environment management
-pip>=22.0.0
-setuptools>=60.0.0
-wheel>=0.37.0
+# Pre-commit
+pre-commit==3.6.0

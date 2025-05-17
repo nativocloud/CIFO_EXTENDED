@@ -26,3 +26,13 @@ repos:
       language: python
       types: [python]
       args: [--max-line-length=88]
+
+-   repo: local
+    hooks:
+    -   id: sync-notebooks
+        name: Sync Jupyter notebooks
+        entry: python -m jupytext --sync notebooks/
+        language: system
+        types: [jupyter]
+        always_run: true
+        pass_filenames: false

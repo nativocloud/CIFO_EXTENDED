@@ -15,21 +15,24 @@ Usage:
 import os
 import sys
 import time
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
 # Configure matplotlib
-plt.style.use('seaborn-v0_8-whitegrid')
-plt.rcParams['figure.figsize'] = (12, 8)
-plt.rcParams['font.size'] = 12
+plt.style.use("seaborn-v0_8-whitegrid")
+plt.rcParams["figure.figsize"] = (12, 8)
+plt.rcParams["font.size"] = 12
 
 # Enable auto-reloading of modules
 try:
-    get_ipython().run_line_magic('load_ext', 'autoreload')
-    get_ipython().run_line_magic('autoreload', '2')
-    print("✅ Autoreload enabled: Changes to Python modules will be automatically reloaded")
+    get_ipython().run_line_magic("load_ext", "autoreload")
+    get_ipython().run_line_magic("autoreload", "2")
+    print(
+        "✅ Autoreload enabled: Changes to Python modules will be automatically reloaded"
+    )
 except:
     print("⚠️ Running outside IPython/Jupyter environment - autoreload not available")
 
@@ -39,7 +42,7 @@ project_root = None
 
 # Try to find the project root by looking for key directories/files
 for parent in [notebook_dir] + list(notebook_dir.parents):
-    if (parent / 'src').exists() and (parent / 'data').exists():
+    if (parent / "src").exists() and (parent / "data").exists():
         project_root = parent
         break
 
@@ -88,4 +91,6 @@ if players_file.exists():
 else:
     print(f"❌ Data file not found: {players_file}")
 
-print("\nNotebook initialization complete. You can now import project modules and run your analysis.")
+print(
+    "\nNotebook initialization complete. You can now import project modules and run your analysis."
+)

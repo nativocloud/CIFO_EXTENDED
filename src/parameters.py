@@ -36,7 +36,7 @@ Example usage:
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 @dataclass(frozen=True)
@@ -85,7 +85,8 @@ class ProblemParameters:
         total_positions = sum(self.POSITION_COUNTS.values())
         if total_positions != self.TEAM_SIZE:
             raise ValueError(
-                f"Position counts sum to {total_positions}, but must equal team size {self.TEAM_SIZE}"
+                f"Position counts sum to {total_positions}, "
+                f"but must equal team size {self.TEAM_SIZE}"
             )
 
         # Check all positions in position_counts are valid
