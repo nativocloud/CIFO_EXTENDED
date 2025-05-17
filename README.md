@@ -1,39 +1,38 @@
 # CIFO Extended Project
 
-## Overview
-This repository contains the implementation of optimization algorithms for the Sports League Assignment Problem, with both single-processor and multi-processor analysis capabilities.
-
 ## Project Structure
 ```
-CIFO_EXTENDED_Project/
+project_root/
 ├── data/                       # Data files
-│   └── players.csv             # Player data with skills and costs
 ├── notebooks/                  # Jupyter notebooks
-│   ├── phase_1_sp/             # Single processor analysis
-│   │   ├── 01_single_processor_analysis.ipynb
-│   │   └── 01_single_processor_analysis.py
-│   └── utils/                  # Utility scripts
-│       ├── init_notebook.py    # Notebook initialization
-│       ├── pair_notebooks.py   # Notebook-script pairing
-│       └── setup_notebooks.py  # Project kernel setup
-├── results/                    # Results directory
-│   └── phase_1_sp/             # Single processor results
-│       ├── images/             # Generated plots
-│       └── data/               # Generated data files
+│   ├── phase_1_sp/            # Single processor analysis
+│   └── utils/                 # Notebook utility scripts
+├── results/                    # Analysis results
+│   └── phase_1_sp/            # Single processor results
+│       ├── data/              # Generated data
+│       └── images/            # Generated plots
 ├── src/                        # Source code
-│   ├── evolution/              # Evolutionary algorithms
-│   ├── operators/              # Genetic operators
-│   └── solution/               # Problem-specific solution
+│   ├── evolution/             # Evolutionary algorithms
+│   ├── operators/             # Genetic operators
+│   └── solution/              # Problem-specific solution
 ├── docs/                       # Documentation
-│   ├── kernel_management_guide.md  # Kernel setup guide
-│   └── notebook_pairing_guide.md   # Notebook pairing guide
+│   ├── environment_setup_guide.md
+│   ├── kernel_management_guide.md
+│   ├── notebook_initialization_guide.md
+│   ├── notebook_pairing_guide.md
+│   └── statistical_analysis_guide.md
 ├── environment.yml             # Conda environment file
 └── setup.sh                    # Setup script
 ```
 
 ## Setup Instructions
 
+### Prerequisites
+- Conda (Anaconda ou Miniconda)
+- Git Bash (para utilizadores Windows)
+
 ### Environment Setup
+
 1. Create and activate the conda environment:
 ```bash
 conda env create -f environment.yml
@@ -41,12 +40,22 @@ conda activate cifo_extended
 ```
 
 2. Run the setup script:
+   - On Linux/macOS:
+   ```bash
+   bash setup.sh
+   ```
+   - On Windows (using Git Bash):
+   ```bash
+   bash setup.sh
+   ```
+
+3. If you encounter path issues, you can manually install the kernel:
 ```bash
-bash setup.sh
+python -m pip install ipykernel
+python -m ipykernel install --user --name=project_kernel --display-name="Project Kernel"
 ```
 
 ### Jupyter Notebook Setup
-For consistent notebook execution across environments:
 
 1. Set up the project kernel and Jupytext pairing:
 ```bash
@@ -58,32 +67,48 @@ python -m notebooks.utils.setup_notebooks
 python -m notebooks.utils.pair_notebooks --all
 ```
 
-3. When opening notebooks, select the "CIFO Project Kernel"
-
-### Running the Analysis
-1. Navigate to the notebooks directory:
+3. Start Jupyter:
 ```bash
-cd notebooks/phase_1_sp
+jupyter lab  # or jupyter notebook
 ```
 
-2. Open the Jupyter notebook:
-```bash
-jupyter notebook 01_single_processor_analysis.ipynb
-```
-
-3. Make sure to run the initialization cell at the beginning:
+4. When opening notebooks, add the following code to the first cell for consistent initialization:
 ```python
-# Initialize notebook environment
-%run ../utils/init_notebook.py
+import sys
+import os
+
+# Get the absolute path to the utils directory
+utils_path = os.path.abspath(os.path.join(os.getcwd(), '..', 'utils'))
+if utils_path not in sys.path:
+    sys.path.append(utils_path)
+
+# Now import the initialization module
+from init_notebook import *
+
+print("✅ Notebook environment initialized successfully!")
 ```
 
 ## Documentation
 
-### Guides
-- [Kernel Management Guide](docs/kernel_management_guide.md): How to set up and use the project kernel
-- [Notebook Pairing Guide](docs/notebook_pairing_guide.md): How to maintain notebook-script synchronization
+Refer to the following guides in the docs/ directory:
 
-### Statistical Analysis
+- environment_setup_guide.md - Detailed environment setup
+- kernel_management_guide.md - Managing Jupyter kernels
+- notebook_initialization_guide.md - Notebook initialization
+- notebook_pairing_guide.md - Using Jupytext for notebook pairing
+- statistical_analysis_guide.md - Statistical analysis procedures
+
+## Development Workflow
+
+This project uses Jupytext to pair notebooks with Python scripts for better version control:
+
+1. Edit either the notebook (.ipynb) or the Python script (.py)
+2. Changes are automatically synchronized between the paired files
+3. Commit both the Python scripts and notebooks to version control
+4. The .gitignore is configured to handle temporary files and outputs
+
+## Statistical Analysis
+
 The project implements both parametric and non-parametric statistical tests to compare algorithm performance:
 - For two algorithms: Wilcoxon (paired) and Mann-Whitney U (unpaired) tests
 - For multiple algorithms: Friedman+Nemenyi (paired) and Kruskal-Wallis+Dunn (unpaired) tests
@@ -98,10 +123,20 @@ The following metrics are analyzed:
 - Success Rate
 - Fitness Over Time Curve
 
-## Development Workflow
-This project uses Jupytext to pair notebooks with Python scripts for better version control:
+## Troubleshooting
 
-1. Edit either the notebook (.ipynb) or the Python script (.py)
-2. Changes are automatically synchronized between the paired files
-3. Commit the Python scripts to version control
-4. The .gitignore is configured to handle temporary files and outputs
+### Common Issues
+
+- **Kernel not found in Jupyter**:
+  - Ensure the environment is activated
+  - Run: `python -m ipykernel install --user --name=project_kernel`
+  - Restart Jupyter
+
+- **setup.sh issues on Windows**:
+  - Use Git Bash instead of CMD/PowerShell
+  - Ensure no spaces in the path (move the project if needed)
+  - Run as administrator if permission issues occur
+
+- **Environment activation issues**:
+  - Close and reopen your terminal after conda installation
+  - Use `conda init` if conda commands aren't recognized
