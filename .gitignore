@@ -48,7 +48,7 @@ results/*/data/*.csv
 # notebooks/**/*.py
 
 # Jupyter notebook outputs (to avoid unnecessary diffs)
-notebooks/**/*.ipynb
+# Removido: notebooks/**/*.ipynb - queremos rastrear os notebooks
 !notebooks/**/*.py
 
 # Kernel specs
