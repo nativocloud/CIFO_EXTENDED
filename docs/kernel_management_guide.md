@@ -1,152 +1,138 @@
-# Kernel Management and Notebook Pairing Guide
+# Guia de Gestão de Kernel para o Projeto CIFO_EXTENDED
 
-This guide explains how to set up a project-specific kernel and ensure consistent notebook-script pairing across different environments.
+Este guia explica como configurar e gerir o kernel Jupyter para o projeto CIFO_EXTENDED, garantindo compatibilidade entre diferentes ambientes.
 
-## Table of Contents
-- [Quick Setup](#quick-setup)
-- [Understanding Kernel Issues](#understanding-kernel-issues)
-- [Project Kernel Setup](#project-kernel-setup)
-- [Notebook-Script Pairing](#notebook-script-pairing)
-- [Troubleshooting](#troubleshooting)
+## Visão Geral
 
-## Quick Setup
+O kernel Jupyter é essencial para a execução correta dos notebooks do projeto. Um kernel bem configurado garante:
 
-For a complete environment setup, run:
+- **Acesso aos módulos do projeto**: Através da configuração correta do PYTHONPATH
+- **Consistência entre ambientes**: Mesmo comportamento em diferentes máquinas
+- **Dependências corretas**: Acesso a todas as bibliotecas necessárias
+- **Emparelhamento notebook-script funcional**: Compatibilidade com Jupytext
 
-```bash
-python -m notebooks.utils.setup_notebooks
-```
+## Configuração do Kernel do Projeto
 
-This script will:
-1. Install required packages (jupytext, ipykernel)
-2. Configure Jupyter to use Jupytext
-3. Create a project-specific kernel with the correct PYTHONPATH
-4. Set up pre-commit hooks for automatic notebook synchronization
+### Método Automático (Recomendado)
 
-## Understanding Kernel Issues
-
-When working with Jupyter notebooks across different environments, several issues can arise:
-
-1. **Kernel Name Mismatches**: Different environments may have different kernel names
-2. **Path Resolution**: The kernel may not have the correct PYTHONPATH
-3. **Dependency Management**: Different kernels may have different package versions
-4. **Notebook Metadata**: Kernel specifications in notebook metadata may cause conflicts
-
-The project-specific kernel solves these issues by:
-- Using a consistent kernel name across environments
-- Setting the correct PYTHONPATH in the kernel environment
-- Ensuring all dependencies are available to the kernel
-- Allowing Jupytext to ignore kernel specification differences
-
-## Project Kernel Setup
-
-### Automatic Setup
-
-Run the setup script:
+Execute o script de configuração:
 
 ```bash
 python -m notebooks.utils.setup_notebooks
 ```
 
-### Manual Setup
+Este script:
+1. Cria um kernel chamado "cifo_project_kernel"
+2. Configura o PYTHONPATH para incluir a raiz do projeto
+3. Define o nome de exibição como "CIFO Project Kernel"
+4. Instala dependências necessárias
 
-If you prefer to set up the kernel manually:
+### Método Manual
 
-1. Create a kernel specification:
+Se precisar configurar manualmente:
+
+1. Instale o pacote ipykernel:
    ```bash
-   python -m ipykernel install --user --name=cifo_project_kernel --display-name="CIFO Project Kernel"
+   pip install ipykernel
    ```
 
-2. Edit the kernel.json file to add the project root to PYTHONPATH:
-   ```json
-   {
-     "argv": [
-       "python",
-       "-m",
-       "ipykernel_launcher",
-       "-f",
-       "{connection_file}"
-     ],
-     "display_name": "CIFO Project Kernel",
-     "language": "python",
-     "env": {
-       "PYTHONPATH": "/path/to/project/root"
-     }
-   }
+2. Crie um kernel específico para o projeto:
+   ```bash
+   python -m ipykernel install --user --name=project_kernel --display-name="Project Kernel"
    ```
 
-### Verifying Kernel Setup
+3. Configure o PYTHONPATH manualmente:
+   - Localize o diretório do kernel:
+     ```bash
+     jupyter kernelspec list
+     ```
+   - Edite o arquivo `kernel.json` para adicionar a variável de ambiente PYTHONPATH
 
-To verify the kernel is set up correctly:
+## Uso do Kernel
 
-```bash
-python -c "from notebooks.utils.setup_notebooks import verify_kernel_setup; verify_kernel_setup()"
-```
+### Em Notebooks Novos
 
-## Notebook-Script Pairing
+Ao criar um novo notebook:
+1. Selecione o kernel "Project Kernel" no menu suspenso
+2. Verifique o nome do kernel no canto superior direito
 
-### Automatic Pairing
+### Em Notebooks Existentes
 
-To pair all notebooks in the project:
-
-```bash
-python -m notebooks.utils.pair_notebooks --all
-```
-
-### Using the Project Kernel
-
-When opening a notebook:
-
-1. Select "Kernel" > "Change kernel" > "CIFO Project Kernel"
-2. Add the initialization code to the first cell:
-   ```python
-   # Initialize notebook environment
-   %run ../utils/init_notebook.py
+Para notebooks existentes:
+1. Use o menu "Kernel > Change kernel" para selecionar "Project Kernel"
+2. Ou execute o script de emparelhamento para configurar automaticamente:
+   ```bash
+   python -m notebooks.utils.pair_notebooks caminho/para/notebook.ipynb
    ```
 
-### Handling Kernel Differences
+## Resolução de Problemas
 
-The setup ensures that:
-- Kernel specifications are normalized across environments
-- Jupytext ignores kernel differences when pairing
-- The correct PYTHONPATH is always available
+### Kernel Não Aparece na Lista
 
-## Troubleshooting
+Se o kernel "Project Kernel" não aparecer:
 
-### Kernel Not Found
+1. Verifique se foi instalado:
+   ```bash
+   jupyter kernelspec list
+   ```
 
-If the CIFO Project Kernel is not available:
-
-1. Run the setup script again:
+2. Se não estiver listado, reinstale:
    ```bash
    python -m notebooks.utils.setup_notebooks
    ```
 
-2. Restart Jupyter if it was already running
-
-### Pairing Not Working
-
-If notebook-script pairing is not working:
-
-1. Check Jupytext is installed:
+3. Reinicie o servidor Jupyter:
    ```bash
-   pip install jupytext
+   jupyter notebook stop
+   jupyter notebook
    ```
 
-2. Manually pair the notebook:
-   ```bash
-   python -m notebooks.utils.pair_notebooks path/to/notebook.ipynb
+### Imports Falham Mesmo com o Kernel Correto
+
+Se os imports de módulos do projeto falharem:
+
+1. Verifique se o PYTHONPATH está configurado corretamente:
+   ```python
+   import sys
+   print(sys.path)
    ```
 
-3. Verify the notebook metadata contains the correct Jupytext configuration
+2. A raiz do projeto deve estar na lista. Se não estiver:
+   ```python
+   import sys
+   from pathlib import Path
+   project_root = Path.cwd().parent  # Ajuste conforme necessário
+   sys.path.insert(0, str(project_root))
+   ```
 
-### Import Errors
-
-If you see import errors when running notebooks:
-
-1. Make sure you're using the CIFO Project Kernel
-2. Run the initialization script:
+3. Execute o script de inicialização:
    ```python
    %run ../utils/init_notebook.py
    ```
-3. Verify the project structure is correct (src/ and data/ directories exist)
+
+### Kernel Muda ao Converter entre .ipynb e .py
+
+Se o kernel mudar durante a conversão:
+
+1. Verifique o metadata do notebook:
+   ```bash
+   jupyter nbconvert --to script --stdout notebook.ipynb | head -n 20
+   ```
+
+2. Reaplique o emparelhamento:
+   ```bash
+   python -m notebooks.utils.pair_notebooks notebook.ipynb
+   ```
+
+## Melhores Práticas
+
+1. **Use sempre o kernel do projeto**: Evite o kernel Python padrão
+2. **Não altere manualmente o kernelspec**: Use os scripts fornecidos
+3. **Verifique o kernel antes de executar**: Confirme no canto superior direito
+4. **Reinicie o kernel após alterações de ambiente**: Para garantir consistência
+5. **Mantenha o ambiente atualizado**: Sincronize com environment.yml
+
+## Referências
+
+- [Documentação Jupyter Kernels](https://jupyter-client.readthedocs.io/en/stable/kernels.html)
+- [IPython Kernel Documentation](https://ipython.readthedocs.io/en/stable/install/kernel_install.html)

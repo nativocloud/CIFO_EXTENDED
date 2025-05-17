@@ -1,181 +1,138 @@
-# Jupyter Notebook and Python Script Pairing Guide
+# Guia de Emparelhamento Notebook-Script
 
-This guide explains how to set up and maintain synchronization between Jupyter notebooks (`.ipynb`) and Python scripts (`.py`) in the CIFO_EXTENDED project.
+Este guia explica como configurar e utilizar o emparelhamento entre notebooks Jupyter (.ipynb) e scripts Python (.py) no projeto CIFO_EXTENDED.
 
-## Table of Contents
-- [Quick Start](#quick-start)
-- [Available Tools](#available-tools)
-- [Basic Pairing Setup](#basic-pairing-setup)
-- [Advanced DevOps Workflow](#advanced-devops-workflow)
-- [Troubleshooting](#troubleshooting)
+## Visão Geral
 
-## Quick Start
+O emparelhamento notebook-script oferece várias vantagens:
 
-### Option 1: Simple Pairing (Recommended for Individual Work)
+- **Controle de versão eficiente**: Os scripts Python são mais amigáveis para git diff/merge
+- **Colaboração melhorada**: Facilita o trabalho em equipe com diferentes ambientes
+- **Portabilidade**: Funciona em qualquer ambiente com configuração mínima
+- **Reprodutibilidade**: Garante consistência entre execuções e ambientes
 
-Run this command to pair all notebooks in the project:
+## Configuração Inicial
+
+### 1. Instalar Dependências
+
+Certifique-se de que seu ambiente tem as dependências necessárias:
+
+```bash
+# Usando conda
+conda env create -f environment.yml
+
+# Ou manualmente
+pip install jupytext ipykernel
+```
+
+### 2. Configurar o Kernel do Projeto
+
+Execute o script de configuração para criar um kernel específico para o projeto:
+
+```bash
+python -m notebooks.utils.setup_notebooks
+```
+
+Este script:
+- Instala pacotes necessários
+- Configura o Jupyter para usar Jupytext
+- Cria um kernel específico para o projeto com PYTHONPATH correto
+- Configura hooks de pre-commit (opcional)
+
+### 3. Emparelhar Notebooks
+
+Para emparelhar todos os notebooks do projeto:
 
 ```bash
 python -m notebooks.utils.pair_notebooks --all
 ```
 
-Or for a specific notebook:
+Para emparelhar um notebook específico:
 
 ```bash
-python -m notebooks.utils.pair_notebooks path/to/notebook.ipynb
+python -m notebooks.utils.pair_notebooks caminho/para/notebook.ipynb
 ```
 
-### Option 2: Initialize Notebook Environment
+## Uso Diário
 
-Add this to the first cell of your notebook:
+### Ao Criar Novos Notebooks
+
+1. Crie o notebook normalmente no Jupyter
+2. Execute o script de emparelhamento para configurá-lo:
+   ```bash
+   python -m notebooks.utils.pair_notebooks caminho/para/novo_notebook.ipynb
+   ```
+3. Selecione o kernel "Project Kernel" ao abrir o notebook
+
+### Inicialização do Notebook
+
+Adicione esta linha na primeira célula de cada notebook:
 
 ```python
-# Initialize notebook environment
 %run ../utils/init_notebook.py
 ```
 
-## Available Tools
+Isso garante:
+- Configuração correta de caminhos para imports
+- Auto-recarregamento de módulos
+- Criação de diretórios de resultados
+- Informações do ambiente
 
-The project provides several tools for notebook-script synchronization:
+### Edição e Sincronização
 
-1. **`set_jupytext_pairing.py`**: Basic script that configures Jupytext pairing with relative paths
-2. **`pair_notebooks.py`**: More advanced script that can pair individual or all notebooks
-3. **`init_notebook.py`**: Environment initialization script for consistent notebook execution
+- **Edições no notebook (.ipynb)**: Salvas automaticamente no arquivo .py
+- **Edições no script (.py)**: Requer reinicialização do kernel para ver no notebook
 
-## Basic Pairing Setup
+## Resolução de Problemas
 
-### Step 1: Pair Your Notebooks
+### Kernel Não Encontrado
 
-```bash
-python -m notebooks.utils.pair_notebooks --all
-```
+Se o kernel "Project Kernel" não estiver disponível:
 
-This will:
-- Find all notebooks in the project
-- Configure them for Jupytext pairing with Python scripts
-- Create paired `.py` files if they don't exist
+1. Execute novamente o script de configuração:
+   ```bash
+   python -m notebooks.utils.setup_notebooks
+   ```
+2. Verifique se o kernel foi criado:
+   ```bash
+   jupyter kernelspec list
+   ```
 
-### Step 2: Initialize Your Notebook Environment
+### Imports Não Funcionam
 
-Add this to the first cell of each notebook:
+Se os imports de módulos do projeto não funcionarem:
 
-```python
-# Initialize notebook environment
-%run ../utils/init_notebook.py
-```
+1. Verifique se a primeira célula executa o script de inicialização
+2. Confirme que o projeto tem a estrutura esperada (src/, data/)
+3. Execute manualmente:
+   ```python
+   import sys
+   from pathlib import Path
+   sys.path.insert(0, str(Path.cwd().parent))
+   ```
 
-This ensures:
-- Proper path configuration
-- Module auto-reloading
-- Consistent environment across machines
+### Emparelhamento Quebrado
 
-### Step 3: Working with Paired Files
+Se o emparelhamento entre .ipynb e .py parar de funcionar:
 
-- Edit either the `.ipynb` or `.py` file
-- Save the file you're editing
-- The paired file will update automatically
-- Use Git to track changes in the `.py` files
-
-## Advanced DevOps Workflow
-
-For team environments or CI/CD pipelines, a more robust setup is available:
-
-### Step 1: Install Development Requirements
-
-Create a `requirements-dev.txt` file:
-
-```
-jupyter>=1.0.0
-jupytext>=1.13.0
-pre-commit>=2.0.0
-```
-
-Install with:
-
-```bash
-pip install -r requirements-dev.txt
-```
-
-### Step 2: Configure Jupyter
-
-Create or edit `~/.jupyter/jupyter_notebook_config.py`:
-
-```python
-c.NotebookApp.contents_manager_class = "jupytext.TextFileContentsManager"
-c.ContentsManager.default_jupytext_formats = "ipynb,py:percent"
-c.ContentsManager.default_notebook_metadata_filter = "all,-language_info"
-c.ContentsManager.default_cell_metadata_filter = "-all"
-```
-
-### Step 3: Set Up Pre-commit Hook
-
-Create `.pre-commit-config.yaml`:
-
-```yaml
-repos:
--   repo: local
-    hooks:
-    -   id: sync-notebooks
-        name: Sync Jupyter notebooks
-        entry: python -m jupytext --sync
-        language: system
-        types: [jupyter]
-        always_run: true
-        pass_filenames: false
-```
-
-Install the hook:
-
-```bash
-pre-commit install
-```
-
-## Troubleshooting
-
-### Notebooks Not Syncing
-
-1. Check if Jupytext is installed:
+1. Verifique se Jupytext está instalado:
    ```bash
    pip install jupytext
    ```
-
-2. Verify notebook metadata:
+2. Reaplique o emparelhamento:
    ```bash
-   python -m notebooks.utils.pair_notebooks path/to/notebook.ipynb
+   python -m notebooks.utils.pair_notebooks caminho/para/notebook.ipynb
    ```
 
-3. Try manual sync:
-   ```bash
-   jupytext --sync path/to/notebook.ipynb
-   ```
+## Melhores Práticas
 
-### Path Issues
+1. **Sempre use o kernel do projeto**: Garante consistência de ambiente
+2. **Execute o script de inicialização**: Primeira célula de cada notebook
+3. **Mantenha ambos .ipynb e .py no controle de versão**: Facilita colaboração
+4. **Reinicie o kernel após editar .py**: Para ver as mudanças no notebook
+5. **Use caminhos relativos**: Melhora a portabilidade entre ambientes
 
-If you encounter path-related errors:
+## Referências
 
-1. Make sure to run the initialization script:
-   ```python
-   %run ../utils/init_notebook.py
-   ```
-
-2. Check the project structure:
-   ```
-   CIFO_EXTENDED_Project/
-   ├── notebooks/
-   │   ├── phase_1_sp/
-   │   └── utils/
-   ├── src/
-   └── data/
-   ```
-
-### Kernel Issues
-
-If the kernel can't find modules:
-
-1. Restart the kernel
-2. Run the initialization script first
-3. Check that the project root is in your Python path:
-   ```python
-   import sys
-   print(sys.path)
-   ```
+- [Documentação Jupytext](https://jupytext.readthedocs.io/)
+- [Jupyter Notebook Best Practices](https://jupyter.org/jupyter-book/guide/advanced/advanced.html)

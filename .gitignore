@@ -43,8 +43,13 @@ results/*/data/*.csv
 !results/*/.gitkeep
 
 # Jupytext pairing
-# Uncomment the following line if you don't want to track .py files paired with notebooks
+# By default, we track both .ipynb and paired .py files
+# If you want to exclude paired .py files, uncomment the following line:
 # notebooks/**/*.py
+
+# Jupyter notebook outputs (to avoid unnecessary diffs)
+notebooks/**/*.ipynb
+!notebooks/**/*.py
 
 # Kernel specs
 .ipython/
