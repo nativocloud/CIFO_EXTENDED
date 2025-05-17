@@ -99,8 +99,13 @@ def pair_notebook(notebook_path, script_path=None, kernel_name=None):
     
     try:
         if nb_path.exists():
-            with open(nb_path, 'r', encoding='utf-8') as f:
-                nb = json.load(f)
+            try:
+                with open(nb_path, 'r', encoding='utf-8') as f:
+                    nb = json.load(f)
+            except json.JSONDecodeError as e:
+                print(f"❌ Error: Notebook {nb_path} has invalid JSON: {e}")
+                print("   This might be due to corruption or incomplete edits.")
+                return False
         else:
             nb = {
                 "cells": [],
@@ -112,14 +117,17 @@ def pair_notebook(notebook_path, script_path=None, kernel_name=None):
         if 'metadata' not in nb:
             nb['metadata'] = {}
         
-        # Add Jupytext configuration
+        # Add Jupytext configuration - more explicit for Windows compatibility
         nb['metadata']['jupytext'] = {
             'formats': 'ipynb,py:percent',
             'text_representation': {
                 'extension': '.py',
                 'format_name': 'percent',
                 'format_version': '1.3'
-            }
+            },
+            # Add explicit Windows-friendly settings
+            'notebook_metadata_filter': 'all',
+            'cell_metadata_filter': 'all'
         }
         
         # Ensure the notebook uses the project kernel
@@ -129,11 +137,13 @@ def pair_notebook(notebook_path, script_path=None, kernel_name=None):
             "language": "python"
         }
         
-        with open(nb_path, 'w', encoding='utf-8') as f:
+        # Write with proper line endings for cross-platform compatibility
+        with open(nb_path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(nb, f, indent=2)
         
         if not script_path.exists():
-            with open(script_path, 'w', encoding='utf-8') as f:
+            # Create script with Windows-friendly line endings
+            with open(script_path, 'w', encoding='utf-8', newline='\n') as f:
                 f.write('''# %% [markdown]
 # # Notebook Title
 # This is a paired Jupyter notebook
